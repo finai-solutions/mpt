@@ -2,7 +2,7 @@ from datetime import datetime
 
 PORTFOLIO_TOKEN_LENGTH = 5
 START_DATE = '2023-01-01-00-00'
-END_DATE = datetime.now()
+END_DATE = None
 TOTAL_BALANCE = 10000
 GRANULARITY = 300  #86400, 21600, 3600, 900, 300, 60
 bound = (0,1)
