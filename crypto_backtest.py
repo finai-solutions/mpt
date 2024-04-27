@@ -13,8 +13,7 @@ from history_prices import get_hist_prices, get_pairs, high_sharpe_portfolio
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 
 
-#all_pairs = get_pairs()
-all_pairs = ['BTC-USD', 'ETH-USDT', 'SOL-USD', 'AVAX-USD', 'BONK-USD']
+all_pairs = get_pairs()
 hist_prices = get_hist_prices(all_pairs)
 
 # filter tokens by high sharpe index
