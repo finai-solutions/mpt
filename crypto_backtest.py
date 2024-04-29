@@ -9,7 +9,7 @@ import time
 from strategies import equal_weight
 from strategies import minimum_variance
 from strategies import max_sharpe
-from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE, TOTAL_BALANCE, bound, GRANULARITY, PORTFOLIO_SIZE, MARKETCAP_LIMIT
+from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE, TOTAL_BALANCE, bound, GRANULARITY, MARKETCAP_LIMIT
 from history_prices import get_hist_prices, get_pairs, high_sharpe_portfolio
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 from utils import get_market_cap, get_symbol_name
@@ -37,6 +37,7 @@ for th in threads:
 
 all_pairs = pairs_names.keys()
 hist_prices = get_hist_prices(all_pairs)
+print("hist_prices keys: {}".format(hist_prices.keys()))
 # filter tokens by high sharpe index
 hist_prices = high_sharpe_portfolio(hist_prices)
 #TODO save hist prices permanently in ticks with all details such as granularity
@@ -49,7 +50,7 @@ hist_mean.columns = ['mu']
 hist_cov = hist_return.cov()
 hist_corr = hist_return.corr()
 
-print("hist_prices keys: {}".format(hist_prices.keys()))
+print("hist_prices keys trimmed: {}".format(hist_prices.keys()))
 print("hist_prices: {}".format(hist_prices))
 print("hist_return: {}".format(hist_return))
 print("hist_mean: {}".format(hist_mean))
