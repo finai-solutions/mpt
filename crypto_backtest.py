@@ -15,9 +15,6 @@ from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 from utils import get_market_cap, get_symbol_name
 
 all_pairs = get_pairs()
-
-all_pairs = all_pairs[:400]
-print("pairs: {}".format(all_pairs))
 pairs_names = {}
 def filter_pair(sym):
     global pairs_names
