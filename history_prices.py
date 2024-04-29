@@ -91,7 +91,6 @@ def get_hist_prices(all_pairs):
 def high_sharpe_portfolio(hist_prices):
     all_pairs = hist_prices.keys()
     hist_return = np.log(hist_prices/hist_prices.shift())
-    #hist_return.dropna(axis=0)
     # Calculating mean (expected returns), covariance (expected volatility), and correlation
     hist_mean = hist_return.mean(axis=0).to_frame()
     hist_mean.columns = ['mu']
@@ -100,23 +99,16 @@ def high_sharpe_portfolio(hist_prices):
     portfolio_returns = []
     portfolio_stds = []
     for i in range(n_portfolios):
-
-        weights = np.random.rand(len(hist_prices.keys()))
-        weights = weights / sum(weights)
+        weights = np.array([1/len(hist_prices.keys())]*len(hist_prices.keys()))
         port_return = portfolio_return(weights, hist_mean)
         port_std = portfolio_std(weights, hist_cov)
         sharpe_ratio = portfolio_sharpe(port_return, port_std)
         portfolio_returns.append(port_return)
         portfolio_stds.append(port_std)
-
-    #print('returns: {}'.format(portfolio_returns))
-    #print("stds: {}".format(portfolio_stds))
     sharpe = portfolio_sharpe(portfolio_returns, portfolio_stds)
     sharpe_index = [(idx,sharpe) for idx, sharpe in enumerate(sharpe)]
     sharpe_index.sort(key=lambda si: si[1], reverse=True)
-    #print("sorted sharpe_index: {}".format(sharpe_index))
     portfolio_index = sharpe_index if len(sharpe_index)<=PORTFOLIO_SIZE else  sharpe_index[0:PORTFOLIO_SIZE]
     portfolio = hist_prices[[all_pairs[idx] for idx, _ in portfolio_index]]
-    #print('portfolio: {}'.format(portfolio))
     hist_prices=portfolio
     return hist_prices

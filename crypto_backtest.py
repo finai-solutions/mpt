@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 import threading
 import time
+from datetime import datetime
 
 from strategies import equal_weight
 from strategies import minimum_variance
@@ -23,7 +24,6 @@ def filter_pair(sym):
         mc = get_market_cap(name)
         if mc >= MARKETCAP_LIMIT:
             pairs_names[sym] = name
-
 threads = []
 for sym in all_pairs:
     thread = threading.Thread(target=filter_pair, args=(sym,))
@@ -36,10 +36,17 @@ for th in threads:
     th.join()
 
 all_pairs = pairs_names.keys()
+
 hist_prices = get_hist_prices(all_pairs)
+time_idx=datetime.now()
+hist_prices.to_csv("hist_prices"+str(time_idx))
+print("hist_prices: {}".format(hist_prices))
 print("hist_prices keys: {}".format(hist_prices.keys()))
+print(hist_prices.info())
 # filter tokens by high sharpe index
 hist_prices = high_sharpe_portfolio(hist_prices)
+hist_prices.to_csv("hist_prices_trimmed"+str(time_idx))
+print("hist_prices: {}".format(hist_prices))
 #TODO save hist prices permanently in ticks with all details such as granularity
 #TODO read all hist prices from disk
 hist_return = np.log(hist_prices/hist_prices.shift())
