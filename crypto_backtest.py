@@ -6,6 +6,7 @@ from Historic_Crypto import HistoricalData, Cryptocurrencies
 import threading
 import time
 from datetime import datetime
+import random
 
 from strategies import equal_weight
 from strategies import minimum_variance
@@ -16,6 +17,8 @@ from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 from utils import get_market_cap, get_symbol_name
 
 all_pairs = get_pairs()
+#all_pairs = ['AVAX-USDT', 'XRP-USD', 'SOL-USDT', 'BTC-USD', 'ETH-USD']
+#random.shuffle(all_pairs)
 pairs_names = {}
 def filter_pair(sym):
     global pairs_names
@@ -28,23 +31,23 @@ threads = []
 for sym in all_pairs:
     thread = threading.Thread(target=filter_pair, args=(sym,))
     threads+=[thread]
-
 for th in threads:
     th.start()
     time.sleep(1)
 for th in threads:
     th.join()
-
 all_pairs = pairs_names.keys()
-
+print("names: {}".format(all_pairs))
 hist_prices = get_hist_prices(all_pairs)
+print("hist prices: {}".format(hist_prices))
 time_idx=datetime.now()
 hist_prices.to_csv("hist_prices"+str(time_idx))
 print("hist_prices: {}".format(hist_prices))
 print("hist_prices keys: {}".format(hist_prices.keys()))
 print(hist_prices.info())
 # filter tokens by high sharpe index
-hist_prices = high_sharpe_portfolio(hist_prices)
+#hist_prices = high_sharpe_portfolio(hist_prices)
+print('high sharpe hist prices: {}'.format(hist_prices))
 hist_prices.to_csv("hist_prices_trimmed"+str(time_idx))
 print("hist_prices: {}".format(hist_prices))
 #TODO save hist prices permanently in ticks with all details such as granularity
@@ -64,21 +67,7 @@ print("hist_mean: {}".format(hist_mean))
 print("hist_cov: {}".format(hist_cov))
 print("hist_corr: {}".format(hist_corr))
 
-# simulate randomized portfolios
-n_portfolios = len(hist_prices.columns)
-portfolio_returns = []
-portfolio_stds = []
 TICKERS=hist_prices.keys()
-print('n: {}'.format(n_portfolios))
-for i in range(n_portfolios):
-
-    weights = np.random.rand(len(TICKERS))
-    weights = weights / sum(weights)
-    port_return = portfolio_return(weights, hist_mean)
-    port_std = portfolio_std(weights, hist_cov)
-    sharpe_ratio = portfolio_sharpe(port_return, port_std)
-    portfolio_returns.append(port_return)
-    portfolio_stds.append(port_std)
 
 #------------ Optimized portfolios ------------------#
 
@@ -120,6 +109,21 @@ print('Weights:', max_sharpe_weights)
 print('Return:', max_sharpe_return)
 print('Volatility:', max_sharpe_std)
 print('Sharpe Ratio:', max_sharpe_sharpe_ratio)
+
+
+# simulate randomized portfolios
+n_portfolios = len(hist_prices.columns)
+portfolio_returns = []
+portfolio_stds = []
+print('n: {}'.format(n_portfolios))
+for i in range(n_portfolios):
+    weights = np.random.rand(len(TICKERS))
+    weights = weights / sum(weights)
+    port_return = portfolio_return(weights, hist_mean)
+    port_std = portfolio_std(weights, hist_cov)
+    sharpe_ratio = portfolio_sharpe(port_return, port_std)
+    portfolio_returns.append(port_return)
+    portfolio_stds.append(port_std)
 
 
 def plot():
