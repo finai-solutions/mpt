@@ -4,20 +4,44 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 import threading
+import time
 
 from strategies import equal_weight
 from strategies import minimum_variance
 from strategies import max_sharpe
-from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE, TOTAL_BALANCE, bound, GRANULARITY, PORTFOLIO_SIZE
+from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE, TOTAL_BALANCE, bound, GRANULARITY, PORTFOLIO_SIZE, MARKETCAP_LIMIT
 from history_prices import get_hist_prices, get_pairs, high_sharpe_portfolio
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
-
+from utils import get_market_cap, get_symbol_name
 
 all_pairs = get_pairs()
-hist_prices = get_hist_prices(all_pairs)
 
+all_pairs = all_pairs[:400]
+print("pairs: {}".format(all_pairs))
+pairs_names = {}
+def filter_pair(sym):
+    global pairs_names
+    name = get_symbol_name(sym)
+    if name!=None:
+        mc = get_market_cap(name)
+        if mc >= MARKETCAP_LIMIT:
+            pairs_names[sym] = name
+
+threads = []
+for sym in all_pairs:
+    thread = threading.Thread(target=filter_pair, args=(sym,))
+    threads+=[thread]
+
+for th in threads:
+    th.start()
+    time.sleep(1)
+for th in threads:
+    th.join()
+
+all_pairs = pairs_names.keys()
+hist_prices = get_hist_prices(all_pairs)
 # filter tokens by high sharpe index
-hist_prices = high_sharpe_portfolio(hist_prices, all_pairs)
+hist_prices = high_sharpe_portfolio(hist_prices)
 #TODO save hist prices permanently in ticks with all details such as granularity
 #TODO read all hist prices from disk
 hist_return = np.log(hist_prices/hist_prices.shift())
@@ -28,7 +52,7 @@ hist_mean.columns = ['mu']
 hist_cov = hist_return.cov()
 hist_corr = hist_return.corr()
 
-print("all_pairs: {}".format(all_pairs))
+print("hist_prices keys: {}".format(hist_prices.keys()))
 print("hist_prices: {}".format(hist_prices))
 print("hist_return: {}".format(hist_return))
 print("hist_mean: {}".format(hist_mean))
