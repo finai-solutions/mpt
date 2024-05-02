@@ -12,4 +12,4 @@ select high return, low volatility combination of tokens.
 - for filtered tokens, optimize portfolio weights for maximum sharpe (highest return, relatively low volatility), and variance(highest return for low volatility)
 - write portfolio to portfolio_sharpe.json, portfolio_var.json
 
-![alt text](https://github.com/ertosns/finai-solutions/mpt/blob/main/img/portfolio.png?raw=true)
+![alt text](https://github.com/finai-solutions/mpt/blob/main/img/portfolio.png?raw=true)
