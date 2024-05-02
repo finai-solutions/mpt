@@ -9,7 +9,7 @@ import os
 
 from strategies import equal_weight, minimum_variance, max_sharpe, efficient_frontier
 from configuration import TOTAL_BALANCE, bound, MARKETCAP_LIMIT, RETURN_PERIOD, INCREMENTAL_ID, DATA_DIR
-from history_prices import high_sharpe_portfolio, get_prices
+from history_prices import get_prices
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 
 hist_prices = get_prices(download=True)

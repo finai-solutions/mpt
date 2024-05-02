@@ -18,7 +18,6 @@ def get_pairs():
     usdt_pairs = []
     attempts_max = 3
     counter = 0
-    #TODO use more reliable lib.
     # loop to avoid missing pairs
     while counter < attempts_max:
         pairs = Cryptocurrencies(verbose=False).find_crypto_pairs()
@@ -51,12 +50,11 @@ def get_hist_prices(all_pairs, clip_date=False):
             try:
                 usd_pair_hist = HistoricalData(usd_pair, GRANULARITY, start_date=START_DATE, end_date=END_DATE, verbose=False).retrieve_data()
             except Exception as e:
-                print("e)")
+                print(e)
                 is_sparse=True
                 counter+=1
                 continue
 
-            print("df for token {} is empty: {}".format(usd_pair, usd_pair_hist.empty))
             is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
             counter+=1
         # only if price history isn't sparse add it.
@@ -74,19 +72,13 @@ def get_hist_prices(all_pairs, clip_date=False):
         thread.start()
     for thread in threads:
         thread.join()
-    '''
-    for usd_pair in all_pairs:
-        print("pair: {}".format(usd_pair))
-        download_data(usd_pair)
-        print("tickers_hist: {}".format(tickers_hist))
-    '''
-    # TODO add market cap filter constraints
+
     # Retrieve historical prices and calculate returns
     hist_prices = pd.DataFrame()
     for pair, hist_price in tickers_hist.items():
 
         if hist_price is None:
-            print("skipping {} is None: {}".format(pair, hist_price is None))
+            print("skipping {} is None".format(pair))
             continue
         hist_price = hist_price['close']
         hist_prices_isna_sum = hist_price.isna().sum()
@@ -117,34 +109,6 @@ def get_hist_prices(all_pairs, clip_date=False):
 
     return hist_prices
 
-def high_sharpe_portfolio(hist_prices):
-    if 'time' in hist_prices.columns:
-        hist_prices = hist_prices.drop('time', axis='columns')
-    all_pairs = hist_prices.keys()
-    hist_return = np.log(hist_prices/hist_prices.shift())
-    # Calculating mean (expected returns), covariance (expected volatility), and correlation
-    hist_mean = hist_return.mean(axis=0).to_frame()
-    hist_mean.columns = ['mu']
-    hist_cov = hist_return.cov()
-
-    #n_portfolios = len(hist_prices.columns)
-    #portfolio_returns = []
-    #portfolio_stds = []
-    #for i in range(n_portfolios):
-    weights = np.array([1/len(hist_prices.keys())]*len(hist_prices.keys()))
-        #port_return = np.log(hist_prices/hist_prices.shift())
-    port_return = portfolio_return(weights, hist_mean)
-    port_std = portfolio_std(weights, hist_cov)
-    sharpe = portfolio_sharpe(port_return, port_std)
-    #portfolio_returns.append(port_return)
-    #portfolio_stds.append(port_std)
-    #sharpe = portfolio_sharpe(portfolio_returns, portfolio_stds)
-    sharpe_index = [(idx,sharpe) for idx, sharpe in enumerate(sharpe)]
-    sharpe_index.sort(key=lambda si: si[1], reverse=True)
-    portfolio_index = sharpe_index if len(sharpe_index)<=PORTFOLIO_SIZE else  sharpe_index[0:PORTFOLIO_SIZE]
-    portfolio = hist_prices[[all_pairs[idx] for idx, _ in portfolio_index]]
-    return portfolio
-
 def download_hist_prices():
     all_pairs = get_pairs()
     #random.shuffle(all_pairs)
@@ -155,7 +119,7 @@ def download_hist_prices():
         try:
             name = get_symbol_name(sym)
         except Exception as e:
-            print("e")
+            print(e)
         if name!=None:
             mc = get_market_cap(name)
             if mc >= MARKETCAP_LIMIT:
