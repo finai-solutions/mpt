@@ -13,3 +13,8 @@ select high return, low volatility combination of tokens.
 - write portfolio to portfolio_sharpe.json, portfolio_var.json under data directory.
 
 ![alt text](https://github.com/finai-solutions/mpt/blob/main/img/portfolio.png?raw=true)
+
+## TODO
+
+- coinbase free pro api doesn't retrieve all pairs
+- coinbase free pro api fails on some pairs query

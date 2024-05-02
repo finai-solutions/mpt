@@ -34,6 +34,7 @@ def minimum_variance(ret, bound):
     return list(optimal['x'])
 
 def max_sharpe(ret, bound):
+    #TODO rank target returns, ore return second to optimal, and third, and so on.
     def sharpe_func(weights):
         hist_mean = ret.mean(axis=0).to_frame()
         hist_cov = ret.cov()
