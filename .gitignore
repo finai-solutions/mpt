@@ -1,5 +1,7 @@
 __pycache__
 .*
 !/.gitignore
+!/img/*.png
 *.png
-hist_prices*
+data
+

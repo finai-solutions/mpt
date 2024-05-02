@@ -29,7 +29,7 @@ def get_market_cap(token_name):
     r = requests.get(url)
     data = r.text
     soup = BeautifulSoup(data, "html5lib")
-    print('token_name: {}'.format(token_name))
+    print('filtering {} by mc'.format(token_name))
     try:
         return float(''.join(soup.find("div", attrs={'coin-metrics'}).find("dd").text.split('$')[1].split(',')))
     except Exception as e:
