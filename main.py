@@ -122,7 +122,7 @@ plt.xlabel('Date')
 plt.ylabel('Value in dollars')
 
 plt.legend()
-plt.savefig('portfolio.png')
+plt.savefig(DATA_DIR+os.sep+'portfolio.png')
 plt.clf()
 
 # Display portfolios
@@ -135,4 +135,4 @@ plt.title('Volatility vs Returns for Different Portfolios')
 plt.xlabel('Expected Volatility')
 plt.ylabel('Expected Returns')
 plt.legend()
-plt.savefig('volatility.png')
+plt.savefig(DATA_DIR+os.sep+'volatility.png')
