@@ -9,7 +9,7 @@ import os
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE,  GRANULARITY, MARKETCAP_LIMIT, DATA_DIR
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
-from configuration import PORTFOLIO_SIZE, INCREMENTAL_ID
+from configuration import get_write_path
 from utils import get_market_cap, get_symbol_name
 
 def get_pairs():
@@ -119,7 +119,7 @@ def get_hist_prices(all_pairs, clip_date=False, verbose=True):
 
 def download_hist_prices(verbose=True):
     all_pairs = get_pairs()
-    with open(DATA_DIR+os.sep+"all_pairs"+str(INCREMENTAL_ID)+".txt", 'w+') as f:
+    with open(get_write_path("all_pairs"), 'w+') as f:
         f.write(str(all_pairs))
     if verbose:
         print("pairs: {}".format(all_pairs))
@@ -148,7 +148,7 @@ def download_hist_prices(verbose=True):
         th.start()
     for th in threads:
         th.join()
-    with open(DATA_DIR+os.sep+"all_pairs_names_filtered_by_mc"+str(INCREMENTAL_ID)+".txt", 'w+') as f:
+    with open(get_write_path("all_names_mc_filtered", ext="json"), 'w+') as f:
         f.write(str(pairs_names))
     assert len(pairs_names)>0
     if verbose:

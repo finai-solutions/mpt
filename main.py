@@ -8,7 +8,7 @@ import random
 import os
 
 from strategies import equal_weight, minimum_variance, max_sharpe, efficient_frontier
-from configuration import TOTAL_BALANCE, bound, MARKETCAP_LIMIT, RETURN_PERIOD, INCREMENTAL_ID, DATA_DIR
+from configuration import TOTAL_BALANCE, bound, MARKETCAP_LIMIT, RETURN_PERIOD,  DATA_DIR, get_write_path
 from history_prices import get_prices
 from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
 
@@ -31,7 +31,7 @@ equally_weighted_return = portfolio_return(equally_weighted_weights, hist_mean_r
 equally_weighted_std = portfolio_std(equally_weighted_weights, hist_cov)
 equally_weighted_sharpe_ratio = portfolio_sharpe(equally_weighted_return, equally_weighted_std)
 
-with open(DATA_DIR+os.sep+'portfolio_equally_weighted'+str(INCREMENTAL_ID)+'.json', 'w+') as f_eq:
+with open(get_write_path('portfolio_equally_weighted', ext='json'), 'w+') as f_eq:
     var_dict = {}
     tw_l = [ (t,w) for t, w in zip(TICKERS, equally_weighted_weights) ]
     tw_l.sort(key=lambda pair: pair[1], reverse=True)
@@ -47,7 +47,7 @@ gmv_return = portfolio_return(gmv_weights, hist_mean_return)
 gmv_std = portfolio_std(gmv_weights, hist_cov)
 gmv_sharpe_ratio = portfolio_sharpe(gmv_return, gmv_std)
 
-with open(DATA_DIR+os.sep+'portfolio_var'+str(INCREMENTAL_ID)+'.json', 'w+') as f_var:
+with open(get_write_path('portfolio_var', ext='json'), 'w+') as f_var:
     var_dict = {}
     tw_l = [ (t,w) for t, w in zip(TICKERS, gmv_weights) ]
     tw_l.sort(key=lambda pair: pair[1], reverse=True)
@@ -63,7 +63,7 @@ max_sharpe_return = portfolio_return(max_sharpe_weights, hist_mean_return)
 max_sharpe_std = portfolio_std(max_sharpe_weights, hist_cov)
 max_sharpe_sharpe_ratio = portfolio_sharpe(max_sharpe_return, max_sharpe_std)
 
-with open(DATA_DIR+os.sep+'portfolio_sharpe'+str(INCREMENTAL_ID)+'.json', 'w+') as f_sharpe:
+with open(get_write_path('portfolio_sharpe', ext='json'), 'w+') as f_sharpe:
     var_dict = {}
     tw_l = [ (t,w) for t, w in zip(TICKERS, max_sharpe_weights) ]
     tw_l.sort(key=lambda pair: pair[1], reverse=True)
@@ -125,7 +125,7 @@ plt.xlabel('Date')
 plt.ylabel('Value in dollars')
 
 plt.legend()
-plt.savefig(DATA_DIR+os.sep+'portfolio.png')
+plt.savefig(get_write_path('portfolio', ext='png'))
 plt.clf()
 
 # Display portfolios
@@ -138,4 +138,4 @@ plt.title('Volatility vs Returns for Different Portfolios')
 plt.xlabel('Expected Volatility')
 plt.ylabel('Expected Returns')
 plt.legend()
-plt.savefig(DATA_DIR+os.sep+'volatility.png')
+plt.savefig(get_write_path('volatility', ext='png'))
