@@ -153,7 +153,7 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
         print("pairs names: {}".format(pairs_names))
     all_pairs = pairs_names.keys()
     hist_prices = get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs)
-    hist_prices.to_csv(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "hist_prices", ext='.csv'))
+    hist_prices.to_csv(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "hist_prices", ext='csv'))
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='forward')
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='backward')
     return hist_prices

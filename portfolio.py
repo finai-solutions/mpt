@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 from strategies import equal_weight, minimum_variance, max_sharpe, efficient_frontier, portfolio_return, portfolio_std, portfolio_sharpe
+from utils import get_write_path
 from history_prices import get_token_data
 from vis import plot
 
