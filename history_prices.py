@@ -139,7 +139,7 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
             #pairs_names[sym] = sym
             if verbose:
                 print("skipping {} below target mc".format(sym))
-    if signlecore:
+    if singlecore:
         for sym in all_pairs:
             filter_pair(sym)
     else:
