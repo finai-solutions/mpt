@@ -33,8 +33,9 @@ equally_weighted_sharpe_ratio = portfolio_sharpe(equally_weighted_return, equall
 
 with open(DATA_DIR+os.sep+'portfolio_equally_weighted'+str(INCREMENTAL_ID)+'.json', 'w+') as f_eq:
     var_dict = {}
-    var_dict['tokens'] = TICKERS
-    var_dict['weights'] = equally_weighted_weights
+    tw_l = [ (t,w) for t, w in zip(TICKERS, equally_weighted_weights) ]
+    tw_l.sort(key=lambda pair: pair[1], reverse=True)
+    var_dict['portfolio'] = tw_l
     var_dict['return'] = equally_weighted_return
     var_dict['std'] = equally_weighted_std
     var_dict['sharpe'] = equally_weighted_sharpe_ratio
@@ -48,8 +49,9 @@ gmv_sharpe_ratio = portfolio_sharpe(gmv_return, gmv_std)
 
 with open(DATA_DIR+os.sep+'portfolio_var'+str(INCREMENTAL_ID)+'.json', 'w+') as f_var:
     var_dict = {}
-    var_dict['tokens'] = TICKERS
-    var_dict['weights'] = gmv_weights
+    tw_l = [ (t,w) for t, w in zip(TICKERS, gmv_weights) ]
+    tw_l.sort(key=lambda pair: pair[1], reverse=True)
+    var_dict['portfolio'] = tw_l
     var_dict['return'] = gmv_return
     var_dict['std'] = gmv_std
     var_dict['sharpe'] = gmv_sharpe_ratio
@@ -63,8 +65,9 @@ max_sharpe_sharpe_ratio = portfolio_sharpe(max_sharpe_return, max_sharpe_std)
 
 with open(DATA_DIR+os.sep+'portfolio_sharpe'+str(INCREMENTAL_ID)+'.json', 'w+') as f_sharpe:
     var_dict = {}
-    var_dict['tokens'] = TICKERS
-    var_dict['weights'] = max_sharpe_weights
+    tw_l = [ (t,w) for t, w in zip(TICKERS, max_sharpe_weights) ]
+    tw_l.sort(key=lambda pair: pair[1], reverse=True)
+    var_dict['portfolio'] = tw_l
     var_dict['return'] = max_sharpe_return
     var_dict['std'] = max_sharpe_std
     var_dict['sharpe'] = max_sharpe_sharpe_ratio

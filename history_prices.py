@@ -79,7 +79,7 @@ def get_hist_prices(all_pairs, clip_date=False, verbose=True):
         thread.join()
     '''
     for usd_pair in all_pairs:
-        download_data(usd_pair, clip_date=False, verbose=True)
+        download_data(usd_pair, verbose=True)
     # Retrieve historical prices and calculate returns
     hist_prices = pd.DataFrame()
     for pair, hist_price in tickers_hist.items():
@@ -164,9 +164,10 @@ def load_hist_prices(hist_prices_file):
     if hist_prices_file is None:
         return None
     hist_prices = pd.read_csv(hist_prices_file)
+    hist_prices = hist_prices.set_index('time')
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='forward')
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='backward')
-    hist_prices.set_index('time')
+    print("hist_prices: {}".format(hist_prices))
     return hist_prices
 
 def get_prices(download=False, hist_path=None, verbose=True):
