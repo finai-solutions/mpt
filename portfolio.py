@@ -61,9 +61,9 @@ def get_max_sharpe_portfolio(start_date, end_date, granularity, market_cap, boun
         f_sharpe.write(str(var_dict))
     return max_sharpe_weights, max_sharpe_std, max_sharpe_return
 
-def get_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, balance, verbose=True):
+def get_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, balance, verbose=True, singlecore=True):
     try:
-        prices, log_return, mean_return, cov, _ = get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=verbose)
+        prices, log_return, mean_return, cov, _ = get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=verbose, singlecore=singlecore)
         tickers = prices.keys()
         eq_w, eq_std, eq_return = get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov)
         gmv_w, gmv_std, gmv_return = get_global_minimum_variance_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov)

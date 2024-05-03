@@ -37,7 +37,7 @@ def get_pairs():
     return all_pairs
 
 tickers_hist = {}
-def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=True):
+def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=True, singlecore=True):
 
     def download_data(usd_pair, verbose=True):
         if verbose:
@@ -65,19 +65,20 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
         else:
             tickers_hist[usd_pair] = usd_pair_hist
 
-    '''
-    #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
-    threads = []
-    for usd_pair in all_pairs:
-        thread = threading.Thread(target=download_data, args=(usd_pair,False,True))
-        threads+=[thread]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
-    '''
-    for usd_pair in all_pairs:
-        download_data(usd_pair, verbose=True)
+    if singlecore:
+        for usd_pair in all_pairs:
+            download_data(usd_pair, verbose=True)
+    else:
+        #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
+        threads = []
+        for usd_pair in all_pairs:
+            thread = threading.Thread(target=download_data, args=(usd_pair,False,True))
+            threads+=[thread]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
     # Retrieve historical prices and calculate returns
     hist_prices = pd.DataFrame()
     for pair, hist_price in tickers_hist.items():
@@ -115,7 +116,7 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
 
     return hist_prices
 
-def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=True):
+def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=True, singlecore=True):
     all_pairs = get_pairs()
     with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_pairs"), 'w+') as f:
         f.write(str(all_pairs))
@@ -138,21 +139,25 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
             #pairs_names[sym] = sym
             if verbose:
                 print("skipping {} below target mc".format(sym))
-    threads = []
-    for sym in all_pairs:
-        thread = threading.Thread(target=filter_pair, args=(sym,))
-        threads+=[thread]
-    for th in threads:
-        th.start()
-    for th in threads:
-        th.join()
+    if signlecore:
+        for sym in all_pairs:
+            filter_pair(sym)
+    else:
+        threads = []
+        for sym in all_pairs:
+            thread = threading.Thread(target=filter_pair, args=(sym,))
+            threads+=[thread]
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
     with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json"), 'w+') as f:
         f.write(str(pairs_names))
     assert len(pairs_names)>0
     if verbose:
         print("pairs names: {}".format(pairs_names))
     all_pairs = pairs_names.keys()
-    hist_prices = get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs)
+    hist_prices = get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, singlecore)
     hist_prices.to_csv(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "hist_prices", ext='csv'))
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='forward')
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='backward')
@@ -168,7 +173,7 @@ def load_hist_prices(hist_prices_file):
     print("hist_prices: {}".format(hist_prices))
     return hist_prices
 
-def get_prices(start_date, end_date, granularity, market_cap, bound, return_period,  verbose=False):
+def get_prices(start_date, end_date, granularity, market_cap, bound, return_period,  verbose=False, singlecore=True):
     #TODO save hist prices permanently in ticks with all details such as granularity
     #TODO read all hist prices from disk
     hist_prices_path = get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'hist_prices', ext='csv')
@@ -176,11 +181,11 @@ def get_prices(start_date, end_date, granularity, market_cap, bound, return_peri
     if os.path.exists(hist_prices_path):
         hist_prices = load_hist_prices(hist_prices_path)
     else:
-        hist_prices = download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose)
+        hist_prices = download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose, singlecore)
     return hist_prices
 
-def get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False):
-    hist_prices = get_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose)
+def get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False, singlecore=True):
+    hist_prices = get_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose, singlecore)
     hist_return = hist_prices/hist_prices.shift(return_period)
     hist_log_return = np.log(hist_return)
 
