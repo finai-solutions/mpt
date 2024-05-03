@@ -7,10 +7,8 @@ import ast
 import os
 
 from Historic_Crypto import HistoricalData, Cryptocurrencies
-from configuration import PORTFOLIO_TOKEN_LENGTH, START_DATE, END_DATE,  GRANULARITY, MARKETCAP_LIMIT, DATA_DIR
-from portfolio import portfolio_return, portfolio_std, portfolio_sharpe
-from configuration import get_write_path
-from utils import get_market_cap, get_symbol_name
+from strategies import portfolio_return, portfolio_std, portfolio_sharpe
+from utils import get_market_cap, get_symbol_name, get_write_path
 
 def get_pairs():
     usd_pairs = []
@@ -39,7 +37,7 @@ def get_pairs():
     return all_pairs
 
 tickers_hist = {}
-def get_hist_prices(all_pairs, clip_date=False, verbose=True):
+def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=True):
 
     def download_data(usd_pair, verbose=True):
         if verbose:
@@ -50,7 +48,7 @@ def get_hist_prices(all_pairs, clip_date=False, verbose=True):
         counter = 0
         while counter<3 and is_sparse:
             try:
-                usd_pair_hist = HistoricalData(usd_pair, GRANULARITY, start_date=START_DATE, end_date=END_DATE, verbose=False).retrieve_data()
+                usd_pair_hist = HistoricalData(usd_pair, granularity, start_date=start_date, end_date=end_date, verbose=verbose).retrieve_data()
             except Exception as e:
                 print(e)
                 is_sparse=True
@@ -60,7 +58,7 @@ def get_hist_prices(all_pairs, clip_date=False, verbose=True):
             is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
             counter+=1
         # only if price history isn't sparse add it.
-        if clip_date and usd_pair_hist.index[0] > datetime.strptime(START_DATE, '%Y-%m-%d-%H-%M') + timedelta(1):
+        if clip_date and usd_pair_hist.index[0] > datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1):
             if verbose:
                 print("{} is skipped, token launch is after start date".format(usd_pair))
             return
@@ -117,9 +115,9 @@ def get_hist_prices(all_pairs, clip_date=False, verbose=True):
 
     return hist_prices
 
-def download_hist_prices(verbose=True):
+def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=True):
     all_pairs = get_pairs()
-    with open(get_write_path("all_pairs"), 'w+') as f:
+    with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_pairs"), 'w+') as f:
         f.write(str(all_pairs))
     if verbose:
         print("pairs: {}".format(all_pairs))
@@ -133,7 +131,7 @@ def download_hist_prices(verbose=True):
             print(e)
         if name!=None:
             mc = get_market_cap(name)
-            if mc >= MARKETCAP_LIMIT:
+            if mc >= market_cap:
                 pairs_names[sym] = name
         else:
             # if you can't get mc, add pair
@@ -148,14 +146,14 @@ def download_hist_prices(verbose=True):
         th.start()
     for th in threads:
         th.join()
-    with open(get_write_path("all_names_mc_filtered", ext="json"), 'w+') as f:
+    with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json"), 'w+') as f:
         f.write(str(pairs_names))
     assert len(pairs_names)>0
     if verbose:
         print("pairs names: {}".format(pairs_names))
     all_pairs = pairs_names.keys()
-    hist_prices = get_hist_prices(all_pairs)
-    hist_prices.to_csv(DATA_DIR+os.sep+"hist_prices"+str(INCREMENTAL_ID)+'.csv')
+    hist_prices = get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs)
+    hist_prices.to_csv(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "hist_prices", ext='.csv'))
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='forward')
     hist_prices = hist_prices.interpolate(method ='linear', limit_direction ='backward')
     return hist_prices
@@ -170,8 +168,26 @@ def load_hist_prices(hist_prices_file):
     print("hist_prices: {}".format(hist_prices))
     return hist_prices
 
-def get_prices(download=False, hist_path=None, verbose=True):
+def get_prices(start_date, end_date, granularity, market_cap, bound, return_period,  verbose=False):
     #TODO save hist prices permanently in ticks with all details such as granularity
     #TODO read all hist prices from disk
-    hist_prices =  download_hist_prices(verbose) if download else load_hist_prices(hist_path)
+    hist_prices_path = get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'hist_prices', ext='csv')
+    hist_prices = None
+    if os.path.exists(hist_prices_path):
+        hist_prices = load_hist_prices(hist_prices_path)
+    else:
+        hist_prices = download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose)
     return hist_prices
+
+def get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False):
+    hist_prices = get_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose)
+    hist_return = hist_prices/hist_prices.shift(return_period)
+    hist_log_return = np.log(hist_return)
+
+    # Calculating mean (expected returns), covariance (expected volatility), and correlation
+    hist_mean_return = hist_log_return.mean(axis=0).to_frame()
+    hist_mean_return.columns = ['mu']
+    hist_cov = hist_log_return.cov()
+    hist_corr = hist_log_return.corr()
+
+    return hist_prices, hist_log_return, hist_mean_return, hist_cov, hist_corr

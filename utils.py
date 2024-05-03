@@ -1,5 +1,10 @@
-from bs4 import BeautifulSoup
+import os
 import requests
+
+from bs4 import BeautifulSoup
+
+from configuration import DATA_DIR
+
 
 def get_market_cap(token_name):
     base_url = "https://coinmarketcap.com/currencies/"
@@ -29,3 +34,6 @@ def get_symbol_name(symbol):
     except Exception as e:
         print(e)
     return token_name
+
+def get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, file_name, ext='txt'):
+    return DATA_DIR+os.sep+file_name+'_'+'_'.join([str(i) for i in [start_date, end_date, str(granularity), market_cap,  bound, return_period]])+'.'+ext

@@ -2,18 +2,30 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-from configuration import RETURN_PERIOD, bound
-from portfolio import portfolio_return, portfolio_std
+# calculate portfolio returns, standard deviation (volatility), and sharpe ratio
+def portfolio_return(weights, mean, return_period):
+    portfolio_return = np.dot(weights.T, mean.values) * return_period
+    return portfolio_return[0]
+
+# std is the same as volatility, and target is minimizing volatility.
+def portfolio_std(weights, covariance):
+    portfolio_std = np.sqrt(np.dot(weights.T, np.dot(covariance, weights)) * 250)
+    return portfolio_std
+
+# target is to maximize returns, and minimize std
+def portfolio_sharpe(returns, std):
+    return np.array(returns) / np.array(std)
+
 
 def equal_weight(assets):
     optimal = [1/len(assets) for i in range(len(assets))]
     return optimal
 
-def minimum_variance(ret, bound):
+def minimum_variance(ret, bound, return_period):
     def find_port_variance(weights):
         # this is actually std
         cov = ret.cov()
-        port_var = np.sqrt(np.dot(weights.T, np.dot(cov, weights)) * RETURN_PERIOD)
+        port_var = np.sqrt(np.dot(weights.T, np.dot(cov, weights)) * return_period)
         return port_var
 
     def weight_cons(weights):
@@ -33,14 +45,14 @@ def minimum_variance(ret, bound):
 
     return list(optimal['x'])
 
-def max_sharpe(ret, bound):
+def max_sharpe(ret, bound, return_period):
     #TODO rank target returns, ore return second to optimal, and third, and so on.
     def sharpe_func(weights):
         hist_mean = ret.mean(axis=0).to_frame()
         hist_cov = ret.cov()
 
-        port_ret = np.dot(weights.T, hist_mean.values) * RETURN_PERIOD
-        port_std = np.sqrt(np.dot(weights.T, np.dot(hist_cov, weights)) * RETURN_PERIOD)
+        port_ret = np.dot(weights.T, hist_mean.values) * return_period
+        port_std = np.sqrt(np.dot(weights.T, np.dot(hist_cov, weights)) * return_period)
         return -1 * port_ret / port_std
 
     def weight_cons(weights):
