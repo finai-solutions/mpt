@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot(hist_prices, tickers, balance, return_period, mean_return, cov, equally_weighted_return, equally_weighted_std, equally_weighted_weights, gmv_return, gmv_std, gmv_weights, max_sharpe_return, max_sharpe_std, max_sharpe_weights):
+from strategies import portfolio_return, portfolio_std, portfolio_sharpe, efficient_frontier
+from utils import get_write_path
+
+def plot(start_date, end_date, granularity, market_cap, bound, hist_prices, tickers, balance, return_period, mean_return, cov, equally_weighted_return, equally_weighted_std, equally_weighted_weights, gmv_return, gmv_std, gmv_weights, max_sharpe_return, max_sharpe_std, max_sharpe_weights):
     # simulate randomized portfolios
     n_portfolios = len(hist_prices.columns)
     portfolio_returns = []
@@ -22,7 +25,7 @@ def plot(hist_prices, tickers, balance, return_period, mean_return, cov, equally
     max_return = max(portfolio_returns+[max_sharpe_return])
     max_return = max_return*1.1 if max_return>0 else max_return*0.9
     target_returns = np.linspace(min_return, max_return, 100)
-    efficient_frontier_risk = efficient_frontier(target_returns, cov, mean_return, equally_weighted_weights, len(tickers))
+    efficient_frontier_risk = efficient_frontier(target_returns, cov, mean_return, equally_weighted_weights, len(tickers), return_period, bound)
 
     # portfolio value over time
     date_range = []
@@ -53,7 +56,7 @@ def plot(hist_prices, tickers, balance, return_period, mean_return, cov, equally
     plt.ylabel('Value in dollars')
 
     plt.legend()
-    plt.savefig(get_write_path('portfolio', ext='png'))
+    plt.savefig(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'portfolio', ext='png'))
     plt.clf()
 
     # Display portfolios
@@ -66,4 +69,4 @@ def plot(hist_prices, tickers, balance, return_period, mean_return, cov, equally
     plt.xlabel('Expected Volatility')
     plt.ylabel('Expected Returns')
     plt.legend()
-    plt.savefig(get_write_path('volatility', ext='png'))
+    plt.savefig(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'volatility', ext='png'))

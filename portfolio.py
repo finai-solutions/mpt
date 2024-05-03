@@ -3,7 +3,7 @@ import pandas as pd
 
 from scipy.optimize import minimize
 
-from strategies import equal_weight, minimum_variance, max_sharpe, efficient_frontier, portfolio_return, portfolio_std, portfolio_sharpe
+from strategies import equal_weight, minimum_variance, max_sharpe,  portfolio_return, portfolio_std, portfolio_sharpe
 from utils import get_write_path
 from history_prices import get_token_data
 from vis import plot
@@ -68,7 +68,7 @@ def get_portfolio(start_date, end_date, granularity, market_cap, bound, return_p
         eq_w, eq_std, eq_return = get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov)
         gmv_w, gmv_std, gmv_return = get_global_minimum_variance_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov)
         max_sharpe_w, max_sharpe_std, max_sharpe_return = get_max_sharpe_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov)
-        plot(prices, tickers, balance, return_period, mean_return, cov, eq_return, eq_std, eq_w, gmv_return, gmv_std, gmv_w, max_sharpe_return, max_sharpe_std, max_sharpe_weights)
+        plot(start_date, end_date, granularity, market_cap, bound, prices, tickers, balance, return_period, mean_return, cov, eq_return, eq_std, eq_w, gmv_return, gmv_std, gmv_w, max_sharpe_return, max_sharpe_std, max_sharpe_w)
         return True
     except Exception as e:
         print(e)

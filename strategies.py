@@ -72,7 +72,7 @@ def max_sharpe(ret, bound, return_period):
 
     return list(optimal['x'])
 
-def efficient_frontier(target_returns, hist_cov, hist_mean_return, equally_weighted_weights, tickers_len):
+def efficient_frontier(target_returns, hist_cov, hist_mean_return, equally_weighted_weights, tickers_len, return_period, bound):
     efficient_frontier_risk = []
     for ret in target_returns:
         optimal = minimize(
@@ -81,7 +81,7 @@ def efficient_frontier(target_returns, hist_cov, hist_mean_return, equally_weigh
             x0=equally_weighted_weights,
             bounds=[bound for x in range(tickers_len)],
             constraints=(
-                {'type': 'eq', 'fun': lambda x: portfolio_return(x, hist_mean_return) - ret},
+                {'type': 'eq', 'fun': lambda x: portfolio_return(x, hist_mean_return, return_period) - ret},
                 {'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}
             ),
             method='SLSQP'

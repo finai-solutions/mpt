@@ -7,7 +7,6 @@ import ast
 import os
 
 from Historic_Crypto import HistoricalData, Cryptocurrencies
-from strategies import portfolio_return, portfolio_std, portfolio_sharpe
 from utils import get_market_cap, get_symbol_name, get_write_path
 
 def get_pairs():
