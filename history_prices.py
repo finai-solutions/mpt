@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 import ast
 import os
+import json
 
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 from utils import get_market_cap, get_symbol_name, get_write_path
@@ -49,7 +50,8 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
             try:
                 usd_pair_hist = HistoricalData(usd_pair, granularity, start_date=start_date, end_date=end_date, verbose=verbose).retrieve_data()
             except Exception as e:
-                print(e)
+                if verbose:
+                    print(e)
                 is_sparse=True
                 counter+=1
                 continue
@@ -116,9 +118,16 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
     return hist_prices
 
 def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=True, singlecore=True):
-    all_pairs = get_pairs()
-    with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_pairs"), 'w+') as f:
-        f.write(str(all_pairs))
+    all_pairs_path = get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_pairs")
+    all_pairs = []
+    if os.path.exists(all_pairs_path):
+        with open(all_pairs_path, 'r') as f:
+            buf = f.read()
+            all_pairs = ast.literal_eval(buf)
+    else:
+        all_pairs = get_pairs()
+        with open(all_pairs_path, 'w+') as f:
+            f.write(str(all_pairs))
     if verbose:
         print("pairs: {}".format(all_pairs))
     # use csv values, it take too long to retrive them.
@@ -128,7 +137,8 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
         try:
             name = get_symbol_name(sym)
         except Exception as e:
-            print(e)
+            if verbose:
+                print(e)
         if name!=None:
             mc = get_market_cap(name)
             if mc >= market_cap:
@@ -138,20 +148,26 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
             #pairs_names[sym] = sym
             if verbose:
                 print("skipping {} below target mc".format(sym))
-    if singlecore:
-        for sym in all_pairs:
-            filter_pair(sym)
+    names_path = get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json")
+    if os.path.exists(names_path):
+        with open(names_path, 'r') as f:
+            buf = f.read()
+            names_path = json.joads(buf)
     else:
-        threads = []
-        for sym in all_pairs:
-            thread = threading.Thread(target=filter_pair, args=(sym,))
-            threads+=[thread]
-        for th in threads:
-            th.start()
-        for th in threads:
-            th.join()
-    with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json"), 'w+') as f:
-        f.write(str(pairs_names))
+        if singlecore:
+            for sym in all_pairs:
+                filter_pair(sym)
+        else:
+            threads = []
+            for sym in all_pairs:
+                thread = threading.Thread(target=filter_pair, args=(sym,))
+                threads+=[thread]
+            for th in threads:
+                th.start()
+            for th in threads:
+                th.join()
+            with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json"), 'w+') as f:
+                f.write(str(pairs_names))
     assert len(pairs_names)>0
     if verbose:
         print("pairs names: {}".format(pairs_names))

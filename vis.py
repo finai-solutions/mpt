@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import json
 
 from strategies import portfolio_return, portfolio_std, portfolio_sharpe, efficient_frontier
 from utils import get_write_path
@@ -38,6 +40,7 @@ def plot(start_date, end_date, granularity, market_cap, bound, hist_prices, tick
         gmv_port_val = 0
         max_sharpe_port_val = 0
         for i, asset in enumerate(tickers):
+            #TODO does iloc[1] index should be replaced by shift period iloc[reward_period], i guess no since hist_prices aren't shifted yet.
             equal_weighted_port_val += equally_weighted_weights[i] * balance / hist_prices[asset].iloc[1] * day[asset]
             gmv_port_val += gmv_weights[i] * balance / hist_prices[asset].iloc[1] * day[asset]
             max_sharpe_port_val += max_sharpe_weights[i] * balance / hist_prices[asset].iloc[1] * day[asset]
@@ -45,6 +48,12 @@ def plot(start_date, end_date, granularity, market_cap, bound, hist_prices, tick
         equally_weighted_portfolio.append(equal_weighted_port_val)
         gmv_portfolio.append(gmv_port_val)
         max_sharpe_portfolio.append(max_sharpe_port_val)
+
+    portfolio_dict = {}
+    portfolio_dict['equally_weighted_portfolio'] = equally_weighted_portfolio
+    portfolio_dict['gmv_portfolio'] = gmv_portfolio
+    portfolio_dict['max_sharpe_portfolio'] = max_sharpe_portfolio
+    pd.DataFrame(portfolio_dict, index=date_range).to_csv(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'portfolios', ext='csv'))
 
     # plot return vs volatility
     plt.plot(date_range, equally_weighted_portfolio, label='equally weighted portfolio')

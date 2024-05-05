@@ -3,8 +3,7 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from configuration import DATA_DIR
-
+DATA_DIR="data"
 
 def get_market_cap(token_name):
     base_url = "https://coinmarketcap.com/currencies/"
