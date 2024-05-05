@@ -12,7 +12,7 @@ import numpy as np
 from datetime import timedelta, datetime
 import dateutil.parser
 
-from utils import get_write_path
+from portfolio.utils import get_write_path
 
 cycles= 86400*45 # 45 days prediction second by second.
 cycle_len = 60

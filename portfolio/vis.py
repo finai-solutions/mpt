@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import json
 
-from strategies import portfolio_return, portfolio_std, portfolio_sharpe, efficient_frontier
-from utils import get_write_path
+from portfolio.strategies import portfolio_return, portfolio_std, portfolio_sharpe, efficient_frontier
+from portfolio.utils import get_write_path
 
 def plot(start_date, end_date, granularity, market_cap, bound, hist_prices, tickers, balance, return_period, mean_return, cov, equally_weighted_return, equally_weighted_std, equally_weighted_weights, gmv_return, gmv_std, gmv_weights, max_sharpe_return, max_sharpe_std, max_sharpe_weights):
     # simulate randomized portfolios

@@ -1,14 +1,15 @@
+import os
+import time
+import threading
+
 import numpy as np
 import pandas as pd
-import threading
-import time
 from datetime import datetime, timedelta
 import ast
-import os
 import json
-
 from Historic_Crypto import HistoricalData, Cryptocurrencies
-from utils import get_market_cap, get_symbol_name, get_write_path
+
+from portfolio.utils import get_market_cap, get_symbol_name, get_write_path
 
 def get_pairs():
     usd_pairs = []

@@ -1,13 +1,12 @@
+import json
 import numpy as np
 import pandas as pd
-
 from scipy.optimize import minimize
-import json
 
-from strategies import equal_weight, minimum_variance, max_sharpe,  portfolio_return, portfolio_std, portfolio_sharpe
-from utils import get_write_path
-from history_prices import get_token_data
-from vis import plot
+from portfolio.utils import get_write_path
+from portfolio.history_prices import get_token_data
+from portfolio.vis import plot
+from portfolio.strategies import equal_weight, minimum_variance, max_sharpe,  portfolio_return, portfolio_std, portfolio_sharpe
 
 
 def get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov):

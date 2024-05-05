@@ -1,7 +1,9 @@
-from portfolio import get_portfolio
-from configuration import TOTAL_BALANCE
-import tqdm
 import time
+
+import tqdm
+
+from portfolio.portfolio import get_portfolio
+from portfolio.configuration import TOTAL_BALANCE
 
 start_dates = ['2018-01-01-00-00', '2019-01-01-00-00', '2020-01-01-00-00', '2021-01-01-00-00', '2022-01-01-00-00', '2023-01-01-00-00', '2024-01-01-00-00']
 start_dates.sort(reverse=True)

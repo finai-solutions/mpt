@@ -1,5 +1,5 @@
 from configuration import TOTAL_BALANCE
-from portfolio import get_portfolio
+from portfolio.portfolio import get_portfolio
 
 START_DATE = '2024-01-01-00-00'
 END_DATE = None
