@@ -1,58 +1,0 @@
-
-vis.py,247
-def plot(hist_prices, tickers, balance, return_period, mean_return, cov, equally_weighted_return, equally_weighted_std, equally_weighted_weights, gmv_return, gmv_std, gmv_weights, max_sharpe_return, max_sharpe_std, max_sharpe_weights):plot6,146
-
-history_prices.py,867
-def get_pairs():get_pairs12,259
-tickers_hist = {}tickers_hist38,1182
-def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=True, singlecore=True):get_hist_prices39,1200
-    def download_data(usd_pair, verbose=True):download_data41,1350
-def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=True, singlecore=True):download_hist_prices118,4480
-    def filter_pair(sym):filter_pair126,4928
-def load_hist_prices(hist_prices_file):load_hist_prices165,6512
-def get_prices(start_date, end_date, granularity, market_cap, bound, return_period,  verbose=False, singlecore=True):get_prices175,6951
-def get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False, singlecore=True):get_token_data186,7616
-
-strategies.py,724
-def portfolio_return(weights, mean, return_period):portfolio_return6,157
-def portfolio_std(weights, covariance):portfolio_std11,381
-def portfolio_sharpe(returns, std):portfolio_sharpe16,579
-def equal_weight(assets):equal_weight20,662
-def minimum_variance(ret, bound, return_period):minimum_variance24,766
-    def find_port_variance(weights):find_port_variance25,815
-    def weight_cons(weights):weight_cons31,1016
-def max_sharpe(ret, bound, return_period):max_sharpe48,1563
-    def sharpe_func(weights):sharpe_func50,1689
-    def weight_cons(weights):weight_cons58,1998
-def efficient_frontier(target_returns, hist_cov, hist_mean_return, equally_weighted_weights, tickers_len):efficient_frontier75,2497
-
-configuration.py,428
-START_DATE = '2024-01-01-00-00'START_DATE4,41
-END_DATE = NoneEND_DATE5,73
-TOTAL_BALANCE = 10000TOTAL_BALANCE6,89
-GRANULARITY = 86400  #86400(1d), 21600(6h), 3600(1h), 900(15min), 300(5min), 60(min)GRANULARITY7,111
-BOUND = (0,0.4) # change to (-1, 1) if you want to shortBOUND8,196
-MARKETCAP_LIMIT = 10**9 #unicornMARKETCAP_LIMIT9,253
-RETURN_PERIOD = 45 # 45 daysRETURN_PERIOD10,286
-DATA_DIR="data"DATA_DIR11,315
-
-utils.py,238
-def get_market_cap(token_name):get_market_cap9,95
-def get_symbol_name(symbol):get_symbol_name21,479
-def get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, file_name, ext='txt'):get_write_path38,1143
-
-main.py,132
-res = get_portfolio(START_DATE, END_DATE, GRANULARITY, MARKETCAP_LIMIT, BOUND, RETURN_PERIOD, TOTAL_BALANCE, True, False)res5,230
-
-instrumenting.py,390
-start_dates = ['2018-01-01-00-00', '2019-01-01-00-00', '2020-01-01-00-00', '2021-01-01-00-00', '2022-01-01-00-00', '2023-01-01-00-00', '2024-01-01-00-00']start_dates6,222
-granularities = [86400, 21600, 3600, 900, 300, 60]granularities8,408
-mcs = [10**9, 10**10]mcs9,459
-bounds = [(0,0.4), (0,1), (-1,1)]bounds10,481
-return_periods = [30, 45, 60, 90, 180, 365]return_periods11,515
-
-portfolio.py,688
-def get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov):get_equally_weighted_portfolio12,312
-def get_global_minimum_variance_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov):get_global_minimum_variance_portfolio29,1436
-def get_max_sharpe_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov):get_max_sharpe_portfolio47,2374
-def get_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, balance, verbose=True, singlecore=True):get_portfolio64,3406
