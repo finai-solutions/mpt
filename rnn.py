@@ -14,11 +14,11 @@ import dateutil.parser
 
 from utils import get_write_path
 
-cycles= 100
+cycles= 86400*45 # 45 days prediction second by second.
 cycle_len = 60
 start_date = '2024-01-01-00-00'
 end_date = None
-granularity = 86400
+granularity = 60
 balance  = 10**10
 bound = (0,0.4)
 return_period = 45

@@ -18,6 +18,11 @@ select high return, low volatility combination of tokens.
 
 max sharpe portfolio via low granularity 1day per record resolution results in a portfolio with low volatility, and relatively lower return, and experiments shows the higher the granularity the higher the volatility, and return of the max sharpe portfolio.
 
+## returns predictions
+
+use recurrent neural networks to predict portfolio return in the future
+
+![the network isn't trained long enough, the example is dummy](https://github.com/finai-solutions/mpt/blob/main/img/portfolios_predictions.png?raw=true)
 
 ## TODO
 
