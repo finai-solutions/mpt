@@ -13,23 +13,17 @@ from datetime import timedelta, datetime
 import dateutil.parser
 
 from portfolio.utils import get_write_path
+from portfolio.portfolio import get_portfolio
 
-cycles= 86400*45 # 45 days prediction second by second.
+granularity = 900
+cycles= 86400*45/granularity # 45 days prediction second by second.
 cycle_len = 60
+market_cap = 10**10
 start_date = '2024-01-01-00-00'
 end_date = None
-granularity = 60
 balance  = 10**10
 bound = (0,0.4)
 return_period = 45
-por_path = get_write_path(start_date, end_date, granularity, balance, bound, return_period, 'portfolios', ext='csv')
-
-assert os.path.exists(por_path), '{}'.format(por_path)
-df = pd.read_csv(por_path)
-df=df.set_index('Unnamed: 0')
-eq_por = df['equally_weighted_portfolio']
-gmv_por = df['gmv_portfolio']
-max_sharpe_por = df['max_sharpe_portfolio']
 
 
 def model(returns, granularity, file_name, cycles, verbose=False):
@@ -133,6 +127,20 @@ def get_actual_predictions(returns, granularity, file_name, cycles, verbose=Fals
     returns.rename('price', inplace=True)
     return pd.concat([returns, fut])
 
+
+
+por_path = get_write_path(start_date, end_date, granularity, balance, bound, return_period, 'portfolios', ext='csv')
+if not os.path.exists(por_path):
+    print("error! can't find portfolio in /data")
+    res = get_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, balance, verbose=False, singlecore=False)
+    if not res:
+        print("error! can't retrieve portfolio from get_portfolio, check your connection")
+        exit()
+df = pd.read_csv(por_path)
+df=df.set_index('Unnamed: 0')
+eq_por = df['equally_weighted_portfolio']
+gmv_por = df['gmv_portfolio']
+max_sharpe_por = df['max_sharpe_portfolio']
 
 eq_por = get_actual_predictions(eq_por, granularity, 'equally_weighted', cycles)
 gmv_por = get_actual_predictions(gmv_por, granularity, 'gmv', cycles)

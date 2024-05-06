@@ -8,7 +8,6 @@ from portfolio.history_prices import get_token_data
 from portfolio.vis import plot
 from portfolio.strategies import equal_weight, minimum_variance, max_sharpe,  portfolio_return, portfolio_std, portfolio_sharpe
 
-
 def get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov):
     equally_weighted_weights = np.array(equal_weight(tickers))
     equally_weighted_return = portfolio_return(equally_weighted_weights, mean_return, return_period) #TODO verify it's log return
