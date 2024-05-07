@@ -16,7 +16,7 @@ from portfolio.utils import get_write_path
 from portfolio.portfolio import get_portfolio
 
 granularity = 900
-cycles= 86400*45/granularity # 45 days prediction second by second.
+cycles= int(86400*45/granularity) # 45 days prediction second by second.
 cycle_len = 60
 market_cap = 10**10
 start_date = '2024-01-01-00-00'
@@ -24,7 +24,6 @@ end_date = None
 balance  = 10**10
 bound = (0,0.4)
 return_period = 45
-
 
 def model(returns, granularity, file_name, cycles, verbose=False):
 
