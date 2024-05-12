@@ -1,0 +1,2 @@
+- read pairs from disk
+- reload token history form hist_prices if it's available in the same daterange.
