@@ -1,11 +1,12 @@
 import os
 import requests
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 
 DATA_DIR="data"
 
-def get_market_cap(token_name):
+def get_market_cap(token_name, verbose=False):
     base_url = "https://coinmarketcap.com/currencies/"
     url = base_url+token_name
     r = requests.get(url)
@@ -14,10 +15,11 @@ def get_market_cap(token_name):
     try:
         return float(''.join(soup.find("div", attrs={'coin-metrics'}).find("dd").text.split('$')[1].split(',')))
     except Exception as e:
-        print(e)
+        if verbose:
+            print(e)
     return 0
 
-def get_symbol_name(symbol):
+def get_symbol_name(symbol, verbose=False):
     symbol = symbol.split('-')[0]
     url = "https://www.coindesk.com/calculator/"+symbol+"/usd/"
     response = requests.get(url)
@@ -31,7 +33,8 @@ def get_symbol_name(symbol):
         if len(token_name.split(' '))>1:
             token_name='-'.join(token_name.split(' '))
     except Exception as e:
-        print(e)
+        if verbose:
+            print(e)
     return token_name
 
 def get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, file_name, ext='txt'):

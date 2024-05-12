@@ -1,1 +1,2 @@
 TOTAL_BALANCE = 76190
+DATA_DIR = "data"

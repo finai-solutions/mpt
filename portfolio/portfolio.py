@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+import os
 
 from portfolio.utils import get_write_path
 from portfolio.history_prices import get_token_data
@@ -61,13 +61,17 @@ def get_max_sharpe_portfolio(start_date, end_date, granularity, market_cap, boun
     return max_sharpe_weights, max_sharpe_std, max_sharpe_return
 
 def get_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, balance, verbose=True, singlecore=True):
+    por_path = get_write_path(start_date, None, granularity, market_cap, bound, return_period, 'returns', ext='json')
+    if os.path.exists(por_path):
+        print('skipping portfolio, already exists {}'.format(por_path))
+        return True
     try:
         prices, log_return, mean_return, cov, _ = get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=verbose, singlecore=singlecore)
         tickers = prices.keys()
         eq_w, eq_std, eq_return = get_equally_weighted_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, mean_return, cov)
         gmv_w, gmv_std, gmv_return = get_global_minimum_variance_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov)
         max_sharpe_w, max_sharpe_std, max_sharpe_return = get_max_sharpe_portfolio(start_date, end_date, granularity, market_cap, bound, return_period, tickers, log_return, mean_return, cov)
-        with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'returns', ext='json'), 'w+') as f_returns:
+        with open(por_path, 'w+') as f_returns:
             returns_dict = {}
             returns_dict['equally_weighted_return'] = eq_return
             returns_dict['gmv_return'] = gmv_return

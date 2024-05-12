@@ -16,7 +16,6 @@ def portfolio_std(weights, covariance):
 def portfolio_sharpe(returns, std):
     return np.array(returns) / np.array(std)
 
-
 def equal_weight(assets):
     optimal = [1/len(assets) for i in range(len(assets))]
     return optimal
