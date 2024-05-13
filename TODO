@@ -1,2 +1,3 @@
 - read pairs from disk
 - reload token history form hist_prices if it's available in the same daterange.
+- implement search algorithm to figure out the date range for available token price history, for example if the token have history starting at 2021-01-01, and start date is 2019-01-01, end date is now, implement search algorithm to figure range of available price history 2021-01-01-now.

@@ -12,6 +12,7 @@ import json
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 
 from portfolio.utils import get_market_cap, get_symbol_name, get_write_path
+from portfolio.merger import load_merge_dfs
 from configuration import DATA_DIR
 
 
@@ -91,14 +92,33 @@ def load_hist_prices(granularity):
     pass
 '''
 
+def get_interval_range_if_exists(token, interval):
+    #TODO implement token range discovery
+    return interval[0], interval[1]
+
 def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=False, singlecore=True, attempts_max = 1):
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
     threads = []
     #load_hist_prices
-    hist_prices_glob = DATA_DIR+os.sep+"hist_prices*"
-    hist_prices_glob_files = glob(hist_prices_glob)
-    for usd_pair in all_pairs:
+    aggregated_df, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
+    hist_prices = aggregated_df
+    # if aggregated data frame has any relevant price history within date-range,
+    # then only query the missing intervals.
+    if len(aggregated_df)>0:
+        hist_prices = aggregated_df
+        # drop columns that aren't in all_pairs
+        disjoint_tokens = list(set(hist_prices.columns)^set(all_pairs))
+        hist_prices = aggregated_df.drop(columns=disjoint_tokens, errors='ignore')
+        #TODO implement multithreading
+        for token, intervals in missing_intervals.items():
+            for interval in intervals:
+                interval_start_date, interval_end_date = get_interval_range_if_exists(token, interval)
+                interval_hist = download_data(interval_start_date, interval_end_date, granularity, token, verbose, cip_date, attempts_max)
+                hist_prices[token].loc[interval_start_date:interval_end_date] = interval_hist
 
+    # retrieve tokens history for tokens not in aggregated data frame/hist_prices
+    all_pairs = list(set(all_pairs)-set(aggregated_df.columns))
+    for usd_pair in all_pairs:
         #adjust start_date, and end_date to download only the remaining
         adjusted_start_date = start_date
         adjusted_end_date = end_date
@@ -122,7 +142,6 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
             thread.join()
 
     # Retrieve historical prices and calculate returns
-    hist_prices = pd.DataFrame()
     for pair, hist_price in tickers_hist.items():
         if hist_price is None:
             if verbose:
