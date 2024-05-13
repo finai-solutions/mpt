@@ -6,6 +6,8 @@ from glob import glob
 from configuration import DATA_DIR
 from datetime import datetime
 
+from portfolio.utils import get_file_params
+
 def adjust_dates(gran_mc_filtered_files, timefmt='%Y-%m-%d %H:%M:%S'):
     adjusted_dates_files = []
     for file in gran_mc_filtered_files:
@@ -23,11 +25,11 @@ def load_history_dfs(granularity, market_cap):
         dfs+=[pd.read_csv(file)]
     granularities = {}
     for file in all_hist_files:
-        print(file)
-        file_params = file.split('/')[1].split('.[a-z]*')[0].split('_')[2:]
-        if int(file_params[2]) not in granularities:
-            granularities[int(file_params[2])] = []
-        granularities[int(file_params[2])] += [{'file': file, 'start_date': file_params[0], 'end_date': file_params[1], 'market_cap': int(file_params[3]), 'bound': file_params[4], 'return_period': file_params[5]}]
+        file_params = get_file_params(file)
+        #file_params = file.split('/')[1].split('.[a-z]*')[0].split('_')[2:]
+        if file_params['granularity'] not in granularities:
+            granularities[file_params['granularity']] = []
+        granularities[file_params['granularity']] += [file_params]
     gran_filtered = granularities[granularity]
     gran_mc_filtered_files = [i for i in gran_filtered if i['market_cap'] >= market_cap]
     date_adjusted_files = adjust_dates(gran_mc_filtered_files)

@@ -11,7 +11,7 @@ import ast
 import json
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 
-from portfolio.utils import get_market_cap, get_symbol_name, get_write_path, get_initial_date
+from portfolio.utils import get_market_cap, get_symbol_name, get_write_path, get_initial_date, get_file_params
 from portfolio.merger import load_merge_dfs
 from configuration import DATA_DIR
 
@@ -90,11 +90,6 @@ def download_data(start_date, end_date, granularity, usd_pair, verbose=False, cl
         tickers_hist[usd_pair] = usd_pair_hist
     return tickers_hist
 
-'''
-def load_hist_prices(granularity):
-    pass
-'''
-
 def get_interval_range_if_exists(token, interval):
     #TODO implement token range discovery
     return interval[0], interval[1]
@@ -103,7 +98,9 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
     threads = []
     #load_hist_prices
+
     aggregated_df, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
+
     hist_prices = aggregated_df
     # if aggregated data frame has any relevant price history within date-range,
     # then only query the missing intervals.
@@ -183,12 +180,14 @@ def get_ondisk_pairs_names():
     glob_pairs_names_glob = DATA_DIR + os.sep + 'all_names_mc_filtered*'
     return glob(glob_pairs_names_glob)
 
-def load_pairs_names(glob_pairs_names_files):
+def load_pairs_names(glob_pairs_names_files, granularity, market_cap):
     pairs_names = {}
     for file_glob in glob_pairs_names_files:
-        with open(file_glob) as f:
-            buf = f.read()
-            pairs_names |= ast.literal_eval(buf)
+        file_params = get_file_params(file_glob)
+        if file_params['market_cap']>=market_cap and file_params['granularity']==granularity:
+            with open(file_glob) as f:
+                buf = f.read()
+                pairs_names |= ast.literal_eval(buf)
     return pairs_names
 
 def download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False, singlecore=True, loadpairs=True, loadpairsnames=True):
@@ -207,6 +206,8 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
     # use csv values, it take too long to retrive them.
     pairs_names = {}
     def filter_pair(sym):
+        if verbose:
+            print('filtering sym: {} by market-cap: {}'.format(sym, market_cap))
         name = None
         try:
             name = get_symbol_name(sym, verbose)
@@ -230,7 +231,7 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
     else:
         pairs_names_files = get_ondisk_pairs_names()
         if len(pairs_names_files) > 0 and loadpairsnames:
-            pairs_names |= load_pairs_names(pairs_names_files)
+            pairs_names |= load_pairs_names(pairs_names_files, granularity, market_cap)
         elif singlecore:
             print('singlecore')
             for sym in all_pairs:

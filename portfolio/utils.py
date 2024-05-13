@@ -1,12 +1,12 @@
 import os
 import requests
 from datetime import datetime, timedelta
+import re
 
 from bs4 import BeautifulSoup
 
 from Historic_Crypto import HistoricalData
-
-DATA_DIR="data"
+from configuration import DATA_DIR
 
 def get_market_cap(token_name, verbose=False):
     base_url = "https://coinmarketcap.com/currencies/"
@@ -42,7 +42,6 @@ def get_symbol_name(symbol, verbose=False):
 
 def get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, file_name, ext='txt'):
     return DATA_DIR+os.sep+file_name+'_'+'_'.join([str(i) for i in [start_date, end_date, str(granularity), market_cap,  bound, return_period]])+'.'+ext
-
 
 
 def valid_date(token, date, fmt, max_granularity=86400, verbose=False):
@@ -87,3 +86,10 @@ def get_initial_date(token, interval, max_granularity=86400, fmt='%Y-%m-%d-%H-%M
             return res
 
     return e #TODO (res)
+
+def get_file_params(file, verbose=True):
+    file_params = re.split(DATA_DIR+'/'+'[a-z_]+', file)[1]
+    file_params = file_params.split('_')
+    if verbose:
+        print('file params: {}'.format(file_params))
+    return {'file': file, 'start_date': file_params[0], 'end_date': file_params[1], 'granularity': int(file_params[2]), 'market_cap': int(file_params[3]), 'bound': file_params[4], 'return_period': int(file_params[5].split('.')[0])}
