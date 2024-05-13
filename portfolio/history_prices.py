@@ -11,7 +11,7 @@ import ast
 import json
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 
-from portfolio.utils import get_market_cap, get_symbol_name, get_write_path
+from portfolio.utils import get_market_cap, get_symbol_name, get_write_path, get_initial_date
 from portfolio.merger import load_merge_dfs
 from configuration import DATA_DIR
 
@@ -61,6 +61,9 @@ def get_pairs(loadpairs=True, attempts_max = 1, verbose=False):
 tickers_hist = {}
 def download_data(start_date, end_date, granularity, usd_pair, verbose=False, clip_date=False, attempts_max=1):
     global tickers_hist
+    initial_date = get_initial_date(usd_pair, [start_date, end_date])
+    if start_date <= initial_date:
+        start_date = initial_date
     if verbose:
         print('downloading: {} history at range {}-{}'.format(usd_pair, start_date, end_date))
     usd_pair_hist = None

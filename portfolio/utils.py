@@ -1,8 +1,10 @@
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from bs4 import BeautifulSoup
+
+from Historic_Crypto import HistoricalData
 
 DATA_DIR="data"
 
@@ -37,5 +39,51 @@ def get_symbol_name(symbol, verbose=False):
             print(e)
     return token_name
 
+
 def get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, file_name, ext='txt'):
     return DATA_DIR+os.sep+file_name+'_'+'_'.join([str(i) for i in [start_date, end_date, str(granularity), market_cap,  bound, return_period]])+'.'+ext
+
+
+
+def valid_date(token, date, fmt, max_granularity=86400, verbose=False):
+    try:
+        res = HistoricalData(token, max_granularity, date, (datetime.strptime(date, fmt)+timedelta(days=1)).strftime(fmt), verbose=False).retrieve_data()
+        print('valid_date: {}'.format(date))
+        return True
+    except Exception as e:
+        if verbose:
+            print('valida_date error: {}'.format(e))
+        return False
+    return True
+
+def get_midway(s, e, fmt):
+    delta = (datetime.strptime(e, fmt)-datetime.strptime(s, fmt))
+    delta = timedelta(days=delta.days)
+    return (datetime.strptime(s,fmt)+delta/2).strftime(fmt)
+
+def get_initial_date(token, interval, max_granularity=86400, fmt='%Y-%m-%d-%H-%M'):
+    s = interval[0]
+    e = interval[1]
+    if valid_date(token, s, fmt, max_granularity):
+        return s
+    else:
+        # if no initial date within given interval, throw an error
+        if s==e:
+            raise Error("no initial date within given interval")
+        # check midway throrough m between s, e
+        m = get_midway(s, e, fmt)
+        if s==m:
+            return s
+        print('m: {}, s: {}, e: {}'.format(m, s, e))
+        # if it's valid, then get_intial_date with new interval <s,m>
+        if valid_date(token, m, fmt, max_granularity):
+            res = get_initial_date(token, [s,m])
+            print('<s,m>: {}'.format(res))
+            return res
+        # else get_intial_date with new pair <m,e>
+        else:
+            res = get_initial_date(token, [m,e])
+            print('<m,e>: {}:'.format(res))
+            return res
+
+    return e #TODO (res)

@@ -36,9 +36,6 @@ def load_history_dfs(granularity, market_cap):
         dfs += [pd.read_csv(file['file'])]
     return dfs
 
-def get_token_initial_price_date(token):
-    #TODO implement
-    return '2022-01-01-00-00'
 
 def get_nan_intervals(token_series):
     mask = token_series == 0
@@ -77,7 +74,6 @@ def merge_dfs_intervals(start_date, end_date, dfs):
     for col in adf.columns:
         interval = get_nan_intervals(adf[col])
         col_intervals[col] = interval
-    df.ilo
     return adf, col_intervals
 
 def load_merge_dfs(start_date, end_date, granularity, market_cap):
