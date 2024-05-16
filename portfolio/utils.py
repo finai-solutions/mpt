@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup
 from Historic_Crypto import HistoricalData
 from configuration import DATA_DIR
 
+fmt='%Y-%m-%d-%H-%M'
+fmtin='%Y-%m-%d %H:%M:%S'
 def get_market_cap(token_name, verbose=False):
     base_url = "https://coinmarketcap.com/currencies/"
     url = base_url+token_name
@@ -90,6 +92,4 @@ def get_initial_date(token, interval, max_granularity=86400, fmt='%Y-%m-%d-%H-%M
 def get_file_params(file, verbose=True):
     file_params = re.split(DATA_DIR+'/'+'[a-z_]+', file)[1]
     file_params = file_params.split('_')
-    if verbose:
-        print('file params: {}'.format(file_params))
     return {'file': file, 'start_date': file_params[0], 'end_date': file_params[1], 'granularity': int(file_params[2]), 'market_cap': int(file_params[3]), 'bound': file_params[4], 'return_period': int(file_params[5].split('.')[0])}

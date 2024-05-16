@@ -5,16 +5,17 @@ from datetime import datetime
 import tqdm
 
 from portfolio.portfolio import get_portfolio
+from portfolio.utils import fmt
 from configuration import TOTAL_BALANCE
 from portfolio.utils import get_write_path
 
 start_dates = ['2018-01-01-00-00', '2019-01-01-00-00', '2020-01-01-00-00', '2021-01-01-00-00', '2022-01-01-00-00', '2023-01-01-00-00', '2024-01-01-00-00']
 start_dates.sort(reverse=True)
-granularities = [60]
+granularities = [3600]
 mcs = [10**10, 10**9]
 bounds = [(0,0.4)]
 return_periods = [30]
-fmt='%Y-%m-%d-%H-%M'
+
 # data analysis instrumentation
 for return_period in tqdm.tqdm(return_periods, desc='return period', position=0):
     for mc in tqdm.tqdm(mcs, desc='market cap', position=1, leave=False):

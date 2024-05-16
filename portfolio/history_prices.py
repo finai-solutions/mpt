@@ -72,6 +72,8 @@ def download_data(start_date, end_date, granularity, usd_pair, verbose=False, cl
     # free api's aren't reliable, keep trying to max_attempts
     while counter<attempts_max and is_sparse:
             try:
+                print("start_date: {}".format(start_date))
+                print('end_date: {}'.format(end_date))
                 usd_pair_hist = HistoricalData(usd_pair, granularity, start_date=start_date, end_date=end_date, verbose=verbose).retrieve_data()
             except Exception as e:
                 if verbose:
@@ -79,7 +81,8 @@ def download_data(start_date, end_date, granularity, usd_pair, verbose=False, cl
                 is_sparse=True
                 counter+=1
                 continue
-            is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
+            if 'close' in usd_pair_hist:
+                is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
             counter+=1
     # only if price history isn't sparse add it.
     if clip_date and usd_pair_hist.index[0] > datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1):
@@ -90,21 +93,17 @@ def download_data(start_date, end_date, granularity, usd_pair, verbose=False, cl
         tickers_hist[usd_pair] = usd_pair_hist
     return tickers_hist
 
-def get_interval_range_if_exists(token, interval):
-    #TODO implement token range discovery
-    return interval[0], interval[1]
-
 def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=False, singlecore=True, attempts_max = 1):
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
     threads = []
-    #load_hist_prices
-
     aggregated_df, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
 
     hist_prices = aggregated_df
     # if aggregated data frame has any relevant price history within date-range,
     # then only query the missing intervals.
     if len(aggregated_df)>0:
+        if verbose:
+            print("aggregating data frames with price history")
         hist_prices = aggregated_df
         # drop columns that aren't in all_pairs
         disjoint_tokens = list(set(hist_prices.columns)^set(all_pairs))
@@ -112,14 +111,28 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
         #TODO implement multithreading
         for token, intervals in missing_intervals.items():
             for interval in intervals:
-                interval_start_date, interval_end_date = get_interval_range_if_exists(token, interval)
-                interval_hist = download_data(interval_start_date, interval_end_date, granularity, token, verbose, cip_date, attempts_max)
-                hist_prices[token].loc[interval_start_date:interval_end_date] = interval_hist
-
+                if verbose:
+                    print("downloading {} prices at interval {} - {}".format(token, interval[0], interval[1]))
+                interval_hist = download_data(interval[0], interval[1], granularity, token, verbose, clip_date, attempts_max)
+                if verbose:
+                    print('downloaded price history from {} to {}'.format(interval[0], interval[1]))
+                hist_prices[token].loc[interval[0]:interval[1]] = interval_hist
+        if verbose:
+            print("aggregated price history info: {}".format(hist_prices.info()))
     # retrieve tokens history for tokens not in aggregated data frame/hist_prices
+    if verbose:
+        print('requested pairs: {}'.format(all_pairs))
     all_pairs = list(set(all_pairs)-set(aggregated_df.columns))
+    if verbose:
+        print("aggregated_pairs: {}".format(aggregated_df.columns))
+        print("remaining pairs to be downloaded: {}".format(all_pairs))
+    # append aggregated pairs to tickers_hist
+    for usd_pair in aggregated_df.columns:
+        tickers_hist[usd_pair] = aggregated_df[usd_pair]
     for usd_pair in all_pairs:
-        #adjust start_date, and end_date to download only the remaining
+        if verbose:
+            print("downloading {} price history".format(usd_pair))
+        #TODO adjust start_date, and end_date to download only the remaining
         adjusted_start_date = start_date
         adjusted_end_date = end_date
         if singlecore:
@@ -131,7 +144,7 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
                 print("get {} history prices in threading mode".format(usd_pair))
             thread = threading.Thread(target=download_data, args=(adjusted_start_date, adjusted_end_date, granularity, usd_pair, verbose, clip_date, attempts_max))
             threads+=[thread]
-    if not singlecore:
+    if singlecore==False:
         for thread in threads:
             if verbose:
                 print("start {} history prices thread".format(thread))
@@ -140,10 +153,9 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
             if verbose:
                 print("join {} history prices thread".format(thread))
             thread.join()
-
     # Retrieve historical prices and calculate returns
     for pair, hist_price in tickers_hist.items():
-        if hist_price is None:
+        if hist_price is None or 'close' not in hist_price:
             if verbose:
                 print("skipping {} is None".format(pair))
             continue
@@ -173,7 +185,8 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
                 hist_prices[pair] = hist_price
         else:
             hist_prices[pair] = hist_price
-
+    if verbose:
+        print("downloaded/loaded price history with info: {}".format(hist_prices.info()))
     return hist_prices
 
 def get_ondisk_pairs_names():
@@ -201,8 +214,6 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
         all_pairs = get_pairs(loadpairs)
         with open(all_pairs_path, 'w+') as f:
             f.write(str(all_pairs))
-    if verbose:
-        print("pairs: {}".format(all_pairs))
     # use csv values, it take too long to retrive them.
     pairs_names = {}
     def filter_pair(sym):
@@ -281,9 +292,13 @@ def get_prices(start_date, end_date, granularity, market_cap, bound, return_peri
     hist_prices_path = get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, 'hist_prices', ext='csv')
     hist_prices = None
     if os.path.exists(hist_prices_path):
+        if verbose:
+            print('loading history prices file: {}'.format(hist_prices_path))
         hist_prices = load_hist_prices(hist_prices_path)
     else:
-        hist_prices = download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose, singlecore)
+        if verbose:
+            print('downloading history prices to file: {}'.format(hist_prices_path))
+        hist_prices = download_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, verbose=verbose, singlecore=singlecore)
     return hist_prices
 
 def get_token_data(start_date, end_date, granularity, market_cap, bound, return_period, verbose=False, singlecore=True):
