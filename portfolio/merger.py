@@ -17,12 +17,14 @@ def adjust_dates(gran_mc_filtered_files, timefmt='%Y-%m-%d %H:%M:%S'):
         adjusted_dates_files += [{'file':file['file'], 'start_date':adjusted_start_date, 'end_date': adjusted_end_date}]
     return adjusted_dates_files
 
-def load_history_dfs(granularity, market_cap):
+def load_history_dfs(granularity, market_cap, verbose=True):
     all_pairs_files_glob = DATA_DIR+os.sep+"hist_prices*"
     all_hist_files = glob(all_pairs_files_glob)
     dfs = []
     for file in all_hist_files:
         dfs+=[pd.read_csv(file)]
+    if len(all_hist_files)==0:
+        return dfs
     granularities = {}
     for file in all_hist_files:
         file_params = utils.get_file_params(file)
@@ -30,14 +32,17 @@ def load_history_dfs(granularity, market_cap):
         if file_params['granularity'] not in granularities:
             granularities[file_params['granularity']] = []
         granularities[file_params['granularity']] += [file_params]
+    if granularity not in granularities:
+        if verbose:
+            print("can't find {} in ondisk files".format(granularity))
+        return dfs
     gran_filtered = granularities[granularity]
     gran_mc_filtered_files = [i for i in gran_filtered if i['market_cap'] >= market_cap]
     date_adjusted_files = adjust_dates(gran_mc_filtered_files)
-    dfs = []
+    data_frames = []
     for file in date_adjusted_files:
-        dfs += [pd.read_csv(file['file'])]
+        data_frames += [pd.read_csv(file['file'])]
     return dfs
-
 
 def get_nan_intervals(token_series, start_date, end_date, fmtin=utils.fmtin, fmtout=utils.fmt):
     mask = token_series == 0
@@ -73,11 +78,15 @@ def get_nan_intervals(token_series, start_date, end_date, fmtin=utils.fmtin, fmt
     return intervals
 
 def merge_dfs_intervals(start_date, end_date, dfs):
+    adf = pd.DataFrame()
+    col_intervals = {}
+    if len(dfs)==0:
+        return adf, col_intervals
     df = pd.DataFrame()
     df = pd.concat(dfs)
     df=df.set_index('time')
     gdf = df.groupby('time')
-    adf = pd.DataFrame()
+
 
     for col in df.columns:
         adf[col] = gdf[col].agg('mean')
@@ -92,7 +101,7 @@ def merge_dfs_intervals(start_date, end_date, dfs):
         end = datetime.strptime(end_date, utils.fmt).strftime(utils.fmtin)
         adf = adf[start:end]
 
-    col_intervals = {}
+
     for col in adf.columns:
         interval = get_nan_intervals(adf[col], start_date, end_date)
         col_intervals[col] = interval

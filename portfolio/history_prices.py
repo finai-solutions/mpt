@@ -16,9 +16,15 @@ from portfolio.merger import load_merge_dfs
 from configuration import DATA_DIR
 
 
-def get_ondisk_load_pairs():
+def get_ondisk_load_pairs(market_cap, granularity):
     all_pairs_files_glob = DATA_DIR+os.sep+'all_pairs*'
-    return glob(all_pairs_files_glob)
+    all_pairs_files = glob(all_pairs_files_glob)
+    filtered_files = []
+    for file_glob in all_pairs_files:
+        file_params = get_file_params(file_glob)
+        if file_params['market_cap']>=market_cap and file_params['granularity']==granularity:
+            filtered_files+=[file_glob]
+    return filtered_files
 
 def load_pairs(all_pairs_files):
     all_pairs = []
@@ -28,8 +34,8 @@ def load_pairs(all_pairs_files):
             all_pairs += ast.literal_eval(buf)
     return list(set(all_pairs))
 
-def get_pairs(loadpairs=True, attempts_max = 1, verbose=False):
-    all_pairs_files = get_ondisk_load_pairs()
+def get_pairs(market_cap, granularity, loadpairs=True, attempts_max = 1, verbose=False):
+    all_pairs_files = get_ondisk_load_pairs(market_cap, granularity)
     if len(all_pairs_files)>0 and loadpairs:
         if verbose:
             print("loading pairs from disk")
@@ -96,7 +102,9 @@ def download_data(start_date, end_date, granularity, usd_pair, verbose=False, cl
 def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=False, singlecore=True, attempts_max = 1):
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
     threads = []
+    print('loading')
     aggregated_df, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
+    print('loaded')
 
     hist_prices = aggregated_df
     # if aggregated data frame has any relevant price history within date-range,
@@ -189,9 +197,15 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
         print("downloaded/loaded price history with info: {}".format(hist_prices.info()))
     return hist_prices
 
-def get_ondisk_pairs_names():
+def get_ondisk_pairs_names(market_cap, granularity):
     glob_pairs_names_glob = DATA_DIR + os.sep + 'all_names_mc_filtered*'
-    return glob(glob_pairs_names_glob)
+    all_pairs_files = glob(glob_pairs_names_glob)
+    filtered_files = []
+    for file_glob in all_pairs_files:
+        file_params = get_file_params(file_glob)
+        if file_params['market_cap']>=market_cap and file_params['granularity']==granularity:
+            filtered_files+=[file_glob]
+    return filtered_files
 
 def load_pairs_names(glob_pairs_names_files, granularity, market_cap):
     pairs_names = {}
@@ -211,9 +225,10 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
             buf = f.read()
             all_pairs = ast.literal_eval(buf)
     else:
-        all_pairs = get_pairs(loadpairs)
+        all_pairs = get_pairs(market_cap, granularity, loadpairs)
         with open(all_pairs_path, 'w+') as f:
             f.write(str(all_pairs))
+    print("all_pairs: {}".format(all_pairs))
     # use csv values, it take too long to retrive them.
     pairs_names = {}
     def filter_pair(sym):
@@ -238,11 +253,14 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
     if os.path.exists(names_path):
         with open(names_path, 'r') as f:
             buf = f.read().replace("\'", '\"')
-            names_path = json.loads(buf)
+            pairs_names = json.loads(buf)
     else:
-        pairs_names_files = get_ondisk_pairs_names()
+        pairs_names_files = get_ondisk_pairs_names(market_cap, granularity)
         if len(pairs_names_files) > 0 and loadpairsnames:
+            if verbose:
+                print('load pairs names')
             pairs_names |= load_pairs_names(pairs_names_files, granularity, market_cap)
+
         elif singlecore:
             print('singlecore')
             for sym in all_pairs:
@@ -263,7 +281,7 @@ def download_hist_prices(start_date, end_date, granularity, market_cap, bound, r
                 th.join()
             with open(get_write_path(start_date, end_date, granularity, market_cap, bound, return_period, "all_names_mc_filtered", ext="json"), 'w+') as f:
                 f.write(str(pairs_names))
-    assert len(pairs_names)>0
+    assert len(pairs_names.items())>0
     if verbose:
         print("pairs names: {}".format(pairs_names))
     all_pairs = pairs_names.keys()
