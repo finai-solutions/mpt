@@ -64,7 +64,7 @@ def get_pairs(market_cap, granularity, loadpairs=True, attempts_max = 1, verbose
     all_pairs = usd_pairs + usdc_pairs + usdt_pairs
     return all_pairs
 
-def download_data(tickers_hist, start_date, end_date, granularity, usd_pair, verbose=False, clip_date=False, attempts_max=1):
+def download_data(tickers_hist, start_date, end_date, granularity, usd_pair, verbose=False, attempts_max=1):
     initial_date = get_initial_date(usd_pair, [start_date, end_date])
     if start_date <= initial_date:
         start_date = initial_date
@@ -89,14 +89,14 @@ def download_data(tickers_hist, start_date, end_date, granularity, usd_pair, ver
                 is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
             counter+=1
     # only if price history isn't sparse add it.
-    if clip_date and (usd_pair_hist.index[0] > (datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1))):
+    if usd_pair_hist.index[0] > (datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1)):
         if verbose:
             print("{} is skipped, token launch is after start date".format(usd_pair))
     else:
         tickers_hist[usd_pair] = usd_pair_hist['close']
     return usd_pair_hist['close']
 
-def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, clip_date=False, verbose=False, singlecore=True, attempts_max = 1):
+def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, verbose=False, singlecore=True, attempts_max = 1):
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
     threads = []
 
@@ -113,7 +113,6 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
         # drop columns that aren't in all_pairs
         disjoint_tokens = list(set(hist_prices.columns)^set(all_pairs))
         hist_prices = aggregated_df.drop(columns=disjoint_tokens, errors='ignore')
-        #TODO implement multithreading
         hist_prices_series={}
         for token, intervals in missing_intervals.items():
             hist_prices_series[token] = hist_prices[token] if token in hist_prices else pd.DataFrame()
@@ -124,29 +123,20 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
                     print("downloading {} prices at interval {} - {}".format(token, interval[0], interval[1]))
                 start = interval[0]
                 end = interval[1]
-                interval_hist = download_data(tickers_hist, start, end, granularity, token, verbose, clip_date, attempts_max)
+                interval_hist = download_data(tickers_hist, start, end, granularity, token, verbose, attempts_max)
                 if verbose:
                     print('downloaded price history from {} to {}'.format(interval[0], interval[1]))
-                #start = get_timestamp_from_mergedate(interval[0])
-                #end = get_timestamp_from_mergedate(interval[1])
                 if verbose:
                     print('assign {} hist interval: {}-{}'.format(token, start, end))
-                #hist_prices[token].loc[start:end] = interval_hist
-                print("interval_hist: {}".format(interval_hist))
-                #TODO concat with right order
-                #token_concat = pd.concat([interval_hist,hist_prices[token]])
+                    print("interval_hist: {}".format(interval_hist))
                 hist_prices_series[token]=pd.concat([interval_hist, hist_prices_series[token] if token in hist_prices_series else pd.DataFrame()])
-                #print("{} concat: {}".format(token, token_concat))
-                #hist_prices = hist_prices.drop(columns=[token], errors='ignore')
-                #hist_prices = pd.concat([hist_prices, token_concat])
-                #print("hist_prices: {}".format(hist_prices))
         if verbose:
             print("aggregated price history info: {}".format(hist_prices.info()))
-        print("hist prices series: {}".format(hist_prices_series))
+        # concatenate hist prices for each token after appending missing intervals.
         hist_prices = pd.concat(hist_prices_series.values(), axis=1, keys=hist_prices_series.keys())
+        # sort hist prices by index
         hist_prices.index = pd.to_datetime(hist_prices.index)
         hist_prices.sort_index(inplace=True)
-    print("[[hist prices]]: {}".format(hist_prices))
     # retrieve tokens history for tokens not in aggregated data frame/hist_prices
     if verbose:
         print('requested pairs: {}'.format(all_pairs))
@@ -166,11 +156,11 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
         if singlecore:
             if verbose:
                 print("get {} history prices in single core mode".format(usd_pair))
-            hist = download_data(tickers_hist, adjusted_start_date, adjusted_end_date, granularity, usd_pair, verbose, clip_date, attempts_max)
+            hist = download_data(tickers_hist, adjusted_start_date, adjusted_end_date, granularity, usd_pair, verbose, attempts_max)
         else:
             if verbose:
                 print("get {} history prices in threading mode".format(usd_pair))
-            thread = threading.Thread(target=download_data, args=(tickers_hist, adjusted_start_date, adjusted_end_date, granularity, usd_pair, verbose, clip_date, attempts_max))
+            thread = threading.Thread(target=download_data, args=(tickers_hist, adjusted_start_date, adjusted_end_date, granularity, usd_pair, verbose, attempts_max))
             threads+=[thread]
     if singlecore==False:
         for thread in threads:
