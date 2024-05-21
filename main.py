@@ -3,9 +3,9 @@ from portfolio.portfolio import get_portfolio
 from datetime import datetime
 
 fmt='%Y-%m-%d-%H-%M'
-START_DATE = '2023-01-01-00-00'
-END_DATE =  '2024-05-13-00-00'
-GRANULARITY = 60  #86400(1d), 21600(6h), 3600(1h), 900(15min), 300(5min), 60(min)
+START_DATE = '2023-11-06-00-00'
+END_DATE =  '2024-05-18-00-00'
+GRANULARITY = 3600  #86400(1d), 21600(6h), 3600(1h), 900(15min), 300(5min), 60(min)
 BOUND = (0,0.4) # change to (-1, 1) if you want to short
 MARKETCAP_LIMIT = 10**10
 RETURN_PERIOD = 45 # 45 days

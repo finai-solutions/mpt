@@ -10,6 +10,15 @@ from configuration import DATA_DIR
 
 fmt='%Y-%m-%d-%H-%M'
 fmtin='%Y-%m-%d %H:%M:%S'
+fmtin2 = '%Y-%m-%d'
+
+def get_timestamp_from_mergedate(str_date):
+    print("mergedate: {}".format(str_date))
+    timestamp = datetime.strptime(str_date, fmt)
+    print('timestamp: {}'.format(timestamp))
+    return timestamp
+
+
 def get_market_cap(token_name, verbose=False):
     base_url = "https://coinmarketcap.com/currencies/"
     url = base_url+token_name

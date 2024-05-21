@@ -25,6 +25,7 @@ def load_history_dfs(granularity, market_cap, verbose=True):
         dfs+=[pd.read_csv(file)]
     if len(all_hist_files)==0:
         return dfs
+
     granularities = {}
     for file in all_hist_files:
         file_params = utils.get_file_params(file)
@@ -36,22 +37,28 @@ def load_history_dfs(granularity, market_cap, verbose=True):
         if verbose:
             print("can't find {} in ondisk files".format(granularity))
         return dfs
+
     gran_filtered = granularities[granularity]
     gran_mc_filtered_files = [i for i in gran_filtered if i['market_cap'] >= market_cap]
-    date_adjusted_files = adjust_dates(gran_mc_filtered_files)
+    # get actual initial, last date of each DataFrame
+    #TODO adjusted_dates isn't utilized.
+    #date_adjusted_files = adjust_dates(gran_mc_filtered_files)
     data_frames = []
-    for file in date_adjusted_files:
+    for file in gran_mc_filtered_files:
         data_frames += [pd.read_csv(file['file'])]
     return dfs
 
-def get_nan_intervals(token_series, start_date, end_date, fmtin=utils.fmtin, fmtout=utils.fmt):
+def get_nan_intervals(token_series, start_date, end_date):
     mask = token_series == 0
     start_date_idx = len(mask)-1
     end_date_idx = len(mask)-1
     intervals = []
-
+    print('for {} get null interval start: {}-{}'.format(token_series.name, start_date, end_date))
     if start_date < token_series.index[0]:
-        intervals +=[(start_date, datetime.strptime(token_series.index[0], fmtin).strftime(fmtout))]
+        try:
+            intervals +=[(start_date, datetime.strptime(token_series.index[0], utils.fmtin).strftime(utils.fmt))]
+        except Exception as e:
+            intervals +=[(start_date, datetime.strptime(token_series.index[0], utils.fmtin2).strftime(utils.fmt))]
 
     for i in range(len(mask)):
         # if nan is encountered
@@ -73,8 +80,8 @@ def get_nan_intervals(token_series, start_date, end_date, fmtin=utils.fmtin, fmt
                 end_date_idx=i-1
                 intervals+=[(token_series.index[start_date_idx], token_series.index[end_date_idx])]
     if end_date > token_series.index[-1]:
-        intervals += [(datetime.strptime(token_series.index[-1], fmtin).strftime(fmtout), end_date)]
-
+        intervals += [(datetime.strptime(token_series.index[-1], utils.fmtin).strftime(utils.fmt), end_date)]
+    print("nan intervals: {}".format(intervals))
     return intervals
 
 def merge_dfs_intervals(start_date, end_date, dfs):
@@ -94,13 +101,16 @@ def merge_dfs_intervals(start_date, end_date, dfs):
     print('start: {}'.format(start_date))
     print('end: {}'.format(end_date))
     print("index 0 date: {}".format(adf.index[0]))
+
+    print(".")
     try:
-        adf = adf[pd.to_datetime(start_date):pd.to_datetime(end_date)]
+        start = pd.to_datetime(start_date)
+        end = pd.to_datetime(end_date)
+        adf = adf[start:end]
     except Exception as e:
         start = datetime.strptime(start_date, utils.fmt).strftime(utils.fmtin)
         end = datetime.strptime(end_date, utils.fmt).strftime(utils.fmtin)
         adf = adf[start:end]
-
 
     for col in adf.columns:
         interval = get_nan_intervals(adf[col], start_date, end_date)
@@ -109,8 +119,9 @@ def merge_dfs_intervals(start_date, end_date, dfs):
     return adf, col_intervals
 
 def load_merge_dfs(start_date, end_date, granularity, market_cap):
+    print('loading merge DataFrames from disk at interval: {}-{} for gran: {}, mc: {}'.format(start_date, end_date, granularity, market_cap))
     date_adjusted_df = load_history_dfs(granularity, market_cap)
     aggregated_df, missing_intervals = merge_dfs_intervals(start_date, end_date, date_adjusted_df)
-
+    print('3')
 
     return aggregated_df, missing_intervals
