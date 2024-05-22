@@ -11,7 +11,7 @@ import ast
 import json
 from Historic_Crypto import HistoricalData, Cryptocurrencies
 
-from portfolio.utils import get_market_cap, get_symbol_name, get_write_path, get_initial_date, get_file_params, get_timestamp_from_mergedate
+from portfolio.utils import get_market_cap, get_symbol_name, get_write_path, get_initial_date, get_file_params, get_timestamp_from_mergedate, get_stable_pairs, is_wrapper
 from portfolio.merger import load_merge_dfs
 from configuration import DATA_DIR
 
@@ -88,36 +88,50 @@ def download_data(tickers_hist, start_date, end_date, granularity, usd_pair, ver
             if 'close' in usd_pair_hist:
                 is_sparse = usd_pair_hist['close'].isna().sum() > 1/3*usd_pair_hist['close'].size or usd_pair_hist.empty
             counter+=1
+    if usd_pair_hist is None:
+        return tickers_hist[usd_pair] if usd_pair in tickers_hist else pd.Series()
     # only if price history isn't sparse add it.
-    if usd_pair_hist.index[0] > (datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1)):
+    start_date = datetime.strptime(start_date, '%Y-%m-%d-%H-%M') + timedelta(1)
+    download_start_date = usd_pair_hist.index[0]
+    if verbose:
+        print("start_date: {}, download_start_date: {}".format(start_date, download_start_date))
+    if  download_start_date > start_date:
         if verbose:
             print("{} is skipped, token launch is after start date".format(usd_pair))
-    else:
-        tickers_hist[usd_pair] = usd_pair_hist['close']
-    return usd_pair_hist['close']
+    # if token is already there, then concatenate series with new downloaded history,
+    concat_with_aggregate_hist = usd_pair_hist['close'] if usd_pair not in tickers_hist else pd.concat([usd_pair_hist['close'], tickers_hist[usd_pair]]).sort_index()
+    tickers_hist[usd_pair] = concat_with_aggregate_hist
+    if verbose:
+        print("concat_with_aggragate_hist: {}".format(concat_with_aggregate_hist))
+    #TODO note that if tickers_hist length is less than assigned series,
+    # then the newly appended series will be cropped to dataframe length
+    # by index range, that is why concat_with_aggregate_hist is returned,
+    # and not tickers_hist so that you can unwrap the tickers_hist, fill missing
+    # intervals, then concatenate the dataframe.
+    return concat_with_aggregate_hist
 
 def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return_period, all_pairs, verbose=False, singlecore=True, attempts_max = 1):
     #coinbase free pro api doesn't doesn't return full price history for frequent queries during concurrency.
-    threads = []
-
-    aggregated_df, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
-    hist_prices = aggregated_df
-    print("[hist prices]: {}".format(hist_prices))
-    print("loaded merge dataframe: {}".format(hist_prices.info()))
+    hist_prices, missing_intervals = load_merge_dfs(start_date, end_date, granularity, market_cap)
+    if verbose:
+        print("aggregated dataframe info: {}".format(hist_prices.info()))
+        print("aggregated dataframe: {}".format(hist_prices))
     # if aggregated data frame has any relevant price history within date-range,
     # then only query the missing intervals.
     tickers_hist = {}
-    if len(aggregated_df)>0:
-        if verbose:
-            print("aggregating data frames with price history")
+    if len(hist_prices)>0:
         # drop columns that aren't in all_pairs
         disjoint_tokens = list(set(hist_prices.columns)^set(all_pairs))
-        hist_prices = aggregated_df.drop(columns=disjoint_tokens, errors='ignore')
+        if verbose:
+            print("aggregating data frames with price history")
+            print('disjoint tokens: {}'.format(disjoint_tokens))
+        hist_prices = hist_prices.drop(columns=disjoint_tokens, errors='ignore')
         hist_prices_series={}
         for token, intervals in missing_intervals.items():
-            hist_prices_series[token] = hist_prices[token] if token in hist_prices else pd.DataFrame()
             if token in disjoint_tokens:
                 continue
+            if token in hist_prices_series:
+                hist_prices_series[token] = hist_prices[token]
             for interval in intervals:
                 if verbose:
                     print("downloading {} prices at interval {} - {}".format(token, interval[0], interval[1]))
@@ -129,25 +143,40 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
                 if verbose:
                     print('assign {} hist interval: {}-{}'.format(token, start, end))
                     print("interval_hist: {}".format(interval_hist))
-                hist_prices_series[token]=pd.concat([interval_hist, hist_prices_series[token] if token in hist_prices_series else pd.DataFrame()])
+                #hist_prices_series[token]=pd.concat([interval_hist, hist_prices_series[token]]) if token in hist_prices_series else interval_hist
+                hist_prices_series[token] = interval_hist
         if verbose:
             print("aggregated price history info: {}".format(hist_prices.info()))
+        print("1-hist_prices: {}".format(hist_prices))
         # concatenate hist prices for each token after appending missing intervals.
         hist_prices = pd.concat(hist_prices_series.values(), axis=1, keys=hist_prices_series.keys())
+        print("2-hist_prices: {}".format(hist_prices))
         # sort hist prices by index
         hist_prices.index = pd.to_datetime(hist_prices.index)
+        print("3-hist_prices: {}".format(hist_prices))
         hist_prices.sort_index(inplace=True)
     # retrieve tokens history for tokens not in aggregated data frame/hist_prices
+    remaining_pairs = list(set(all_pairs)-set(hist_prices.columns))
     if verbose:
         print('requested pairs: {}'.format(all_pairs))
-    all_pairs = list(set(all_pairs)-set(aggregated_df.columns))
-    if verbose:
-        print("aggregated_pairs: {}".format(aggregated_df.columns))
-        print("remaining pairs to be downloaded: {}".format(all_pairs))
+        print("aggregated_pairs: {}".format(hist_prices.columns))
+        print("remaining pairs to be downloaded: {}".format(remaining_pairs))
     # append aggregated pairs to tickers_hist
-    for usd_pair in aggregated_df.columns:
-        tickers_hist[usd_pair] = aggregated_df[usd_pair]
-    for usd_pair in all_pairs:
+    if verbose:
+        print('hist_prices: {}'.format(hist_prices))
+    # merge aggregated df `hist_prices`, and downloaded missing intervals `hist_prices`
+    for usd_pair in hist_prices.columns:
+        if usd_pair in tickers_hist:
+            tickers_hist[usd_pair] = pd.concat([hist_prices[usd_pair], tickers_hist[usd_pair]], axis=1, keys=[usd_pair]).sort_index()
+        else:
+            tickers_hist[usd_pair] = hist_prices[usd_pair]
+    if verbose:
+        print('tickers hist: {}'.format(tickers_hist))
+    ###########################
+    # download remaining pairs
+    ###########################
+    threads = []
+    for usd_pair in remaining_pairs:
         if verbose:
             print("downloading {} price history".format(usd_pair))
         #TODO adjust start_date, and end_date to download only the remaining
@@ -171,38 +200,39 @@ def get_hist_prices(start_date, end_date, granularity, market_cap, bound, return
             if verbose:
                 print("join {} history prices thread".format(thread))
             thread.join()
-    # Retrieve historical prices and calculate returns
-    for pair, hist_price in tickers_hist.items():
-        if hist_price is None or 'close' not in hist_price:
+    #######
+    # end #
+    #######
+    for pair, token in tickers_hist.items():
+        token_isna_sum = token.isna().sum()
+        iswrapper = is_wrapper(pair, all_pairs)
+        if verbose:
+            print("{} is a wrapper: {}".format(pair, iswrapper))
+        stables, wrappers = get_stable_pairs(pair, iswrapper)
+        stable_pairs = stables + wrappers
+        if verbose:
+            print('stable pairs: {}'.format(stable_pairs))
+        nan_counts = []
+        for nonsparse_stable_pair in stable_pairs:
+            # if pair has less nan than rest of pairs, keep it and remove the rest.
+            nan_counts += [(nonsparse_stable_pair, hist_prices[nonsparse_stable_pair].isna().sum() if nonsparse_stable_pair in hist_prices else hist_prices.shape[0])]
+        nan_counts.sort(key=lambda i:i[1])
+
+        # if they are all equal keep usdt_pair, or not available usdc_pair, if not avilable then usd pair, if not avilable then do nothing.
+        removing_pairs = []
+        if sum([i[1]-nan_counts[0][1] for i in nan_counts])==0:
             if verbose:
-                print("skipping {} is None".format(pair))
-            continue
-        hist_price = hist_price['close']
-        hist_prices_isna_sum = hist_price.isna().sum()
-        usd_pair  = '-'.join([pair.split('-')[0], 'USD'])
-        usdc_pair = '-'.join([pair.split('-')[0], 'USDC'])
-        usdt_pair = '-'.join([pair.split('-')[0], 'USDT'])
-        hist_prices_columns = hist_prices.columns
-        if usd_pair in hist_prices_columns:
-            if hist_prices[usd_pair].isna().sum() < hist_prices_isna_sum:
-                continue
-            else:
-                hist_prices = hist_prices.drop(usd_pair, axis='columns')
-                hist_prices[pair] = hist_price
-        elif usdc_pair in hist_prices_columns:
-            if hist_prices[usdc_pair].isna().sum() < hist_prices_isna_sum:
-                continue
-            else:
-                hist_prices = hist_prices.drop(usdc_pair, axis='columns')
-                hist_prices[pair] = hist_price
-        elif usdt_pair in hist_prices_columns:
-            if hist_prices[usdt_pair].isna().sum() < hist_prices_isna_sum:
-                continue
-            else:
-                hist_prices = hist_prices.drop(usdt_pair, axis='columns')
-                hist_prices[pair] = hist_price
+                print("all pairs have equal nan values: {}".format(nan_counts[0][1]))
+            for stable_pair in stables:
+                if stable_pair in hist_prices:
+                    removing_pairs = list(set(stable_spairs)-set([stable_pair]))
         else:
-            hist_prices[pair] = hist_price
+            removing_pairs = [i[0] for i in nan_counts[1:]]
+        if verbose:
+            print('keeping {}, removing: {}'.format(nan_counts[0], removing_pairs))
+        for remove_pair in removing_pairs:
+            if remove_pair in hist_prices:
+                hist_prices = hist_prices.drop(remove_pair, axis='columns')
     if verbose:
         print("downloaded/loaded price history with info: {}".format(hist_prices.info()))
     return hist_prices

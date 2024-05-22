@@ -11,6 +11,7 @@ from configuration import DATA_DIR
 fmt='%Y-%m-%d-%H-%M'
 fmtin='%Y-%m-%d %H:%M:%S'
 fmtin2 = '%Y-%m-%d'
+STABLES = ['USD', 'USDC', 'USDT']
 
 def get_timestamp_from_mergedate(str_date):
     print("mergedate: {}".format(str_date))
@@ -102,3 +103,27 @@ def get_file_params(file, verbose=True):
     file_params = re.split(DATA_DIR+'/'+'[a-z_]+', file)[1]
     file_params = file_params.split('_')
     return {'file': file, 'start_date': file_params[0], 'end_date': file_params[1], 'granularity': int(file_params[2]), 'market_cap': int(file_params[3]), 'bound': file_params[4], 'return_period': int(file_params[5].split('.')[0])}
+
+
+
+def get_stable_pairs(pair, iswrapper=True):
+    usd_pair  = '-'.join([pair.split('-')[0], 'USD']) if not iswrapper else '-'.join([pair[1:].split('-')[0], 'USD'])
+    wusd_pair  = 'W'+'-'.join([pair.split('-')[0], 'USD']) if not iswrapper else '-'.join([pair.split('-')[0], 'USD'])
+    usdc_pair = '-'.join([pair.split('-')[0], 'USDC']) if not iswrapper else '-'.join([pair[1:].split('-')[0], 'USDC'])
+    wusdc_pair = 'W'+'-'.join([pair.split('-')[0], 'USDC']) if not iswrapper else '-'.join([pair.split('-')[0], 'USDC'])
+    usdt_pair = '-'.join([pair.split('-')[0], 'USDT']) if not iswrapper else '-'.join([pair[1:].split('-')[0], 'USDT'])
+    wusdt_pair = 'W'+'-'.join([pair.split('-')[0], 'USDT']) if not iswrapper else '-'.join([pair.split('-')[0], 'USDT'])
+    stables = [usdt_pair, usdc_pair, usd_pair]
+    wrappers = [wusdt_pair, wusdc_pair, wusd_pair]
+    return stables, wrappers
+
+
+def is_wrapper(pair, all_pairs):
+    print('is wrapper: {}'.format(pair[0]))
+    if pair[0].lower() == 'w':
+        stables = ['-'.join([pair[1:].split('-')[0], stable]) for stable in STABLES]
+        print('stables: {}'.format(stables))
+        for token in stables:
+            if token in all_pairs:
+                return True
+    return False
